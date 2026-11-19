@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Firebase Cloud Sync Guide — CuePoint</title>
+    <link rel="icon" href="../../icons/icon-48.png" />
+    <link rel="stylesheet" href="moments.css" />
+    <style>
+      .guide-wrap {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 36px 20px 80px;
+      }
+      .guide-head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding-bottom: 18px;
+        border-bottom: 1px solid var(--line);
+        margin-bottom: 24px;
+      }
+      .guide-head h1 {
+        margin: 0;
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+      .guide-intro {
+        margin: 0 0 24px;
+        color: var(--muted);
+        font-size: 14.5px;
+        line-height: 1.6;
+      }
+      .guide-steps {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .guide-step {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 18px 20px;
+      }
+      .guide-step__num {
+        display: inline-block;
+        font-family: var(--mono);
+        font-size: 11.5px;
+        font-weight: 600;
+        color: var(--accent);
+        background: var(--accent-soft);
+        padding: 2px 8px;
+        border-radius: 999px;
+        margin-bottom: 8px;
+      }
+      .guide-step h2 {
+        margin: 0 0 6px;
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text);
+      }
+      .guide-step p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 13.5px;
+        line-height: 1.6;
+      }
+      .guide-step strong {
+        color: var(--text);
+      }
+      .guide-code-wrap {
+        position: relative;
+        margin-top: 12px;
+      }
+      .guide-code {
+        margin: 0;
+        padding: 14px;
+        background: var(--bg);
+        border: 1px solid var(--line-strong);
+        border-radius: 9px;
+        color: var(--text);
+        font-family: var(--mono);
+        font-size: 12.5px;
+        line-height: 1.5;
+        overflow-x: auto;
+      }
+      .guide-copy {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="guide-wrap">
+      <header class="guide-head">
+        <img class="logo" src="../../icons/icon-96.png" alt="" />
+        <h1>Firebase Cloud Sync Setup (BYOC)</h1>
+      </header>
+
+      <p class="guide-intro">
+        Connect your own free <strong>Firebase Spark Plan</strong> project so your saved YouTube
+        moments sync live across devices while staying 100% under your own Google account.
+      </p>
+
+      <div class="guide-steps">
+        <section class="guide-step">
+          <span class="guide-step__num">Step 1</span>
+          <h2>Create a free Firebase project</h2>
+          <p>
+            Go to the Firebase Console, click <strong>Add project</strong>, name it (e.g.,
+            <code>youtube-moments</code>), and stay on the free <strong>Spark plan</strong> ($0,
+            no billing required).
+          </p>
+        </section>
+
+        <section class="guide-step">
+          <span class="guide-step__num">Step 2</span>
+          <h2>Enable Email/Password sign-in &amp; add your user</h2>
+          <p>
+            Open <strong>Build → Authentication → Sign-in method</strong>, enable
+            <strong>Email/Password</strong>, then go to the <strong>Users</strong> tab and click
+            <strong>Add user</strong> to create the email and password you will use in the
+            extension.
+          </p>
+        </section>
+
+        <section class="guide-step">
+          <span class="guide-step__num">Step 3</span>
+          <h2>Create a Realtime Database</h2>
+          <p>
+            Open <strong>Build → Realtime Database</strong>, click <strong>Create Database</strong>,
+            choose your region, and start in <strong>Locked mode</strong>.
+          </p>
+        </section>
+
+        <section class="guide-step">
+          <span class="guide-step__num">Step 4</span>
+          <h2>Publish these Security Rules</h2>
+          <p>
+            In <strong>Realtime Database → Rules</strong>, replace the rules with the snippet below
+            and click <strong>Publish</strong>. This locks all data strictly to your authenticated
+            account:
+          </p>
+          <div class="guide-code-wrap">
+            <pre id="rulesCode" class="guide-code"></pre>
+            <button id="copyRulesBtn" class="btn-sm primary guide-copy" type="button">
+              Copy Rules
+            </button>
+          </div>
+        </section>
+
+        <section class="guide-step">
+          <span class="guide-step__num">Step 5</span>
+          <h2>Copy your Firebase config &amp; Sign In</h2>
+          <p>
+            Go to <strong>Project Settings → General → Your apps</strong>, click the
+            <strong>Web (&lt;/&gt;)</strong> icon to register an app, copy the entire
+            <code>const firebaseConfig = { ... };</code> block (including <code>databaseURL</code>),
+            paste it into the <strong>Cloud (BYOC)</strong> tab in CuePoint, and sign in.
+          </p>
+        </section>
+      </div>
+    </div>
+    <script src="firebase-guide.js"></script>
+  </body>
+</html>

@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CuePoint</title>
+    <link rel="icon" href="../../icons/icon-48.png" />
+    <link rel="stylesheet" href="moments.css" />
+  </head>
+  <body>
+    <!-- Icon sprite -->
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <defs>
+        <symbol id="i-search" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="7"></circle>
+          <line x1="21" y1="21" x2="16.5" y2="16.5"></line>
+        </symbol>
+        <symbol id="i-import" viewBox="0 0 24 24">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </symbol>
+        <symbol id="i-export" viewBox="0 0 24 24">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="17 8 12 3 7 8"></polyline>
+          <line x1="12" y1="3" x2="12" y2="15"></line>
+        </symbol>
+        <symbol id="i-edit" viewBox="0 0 24 24">
+          <path
+            d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"
+          ></path>
+        </symbol>
+        <symbol id="i-add" viewBox="0 0 24 24">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </symbol>
+        <symbol id="i-copy" viewBox="0 0 24 24">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+          <path
+            d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+          ></path>
+        </symbol>
+        <symbol id="i-share" viewBox="0 0 24 24">
+          <circle cx="18" cy="5" r="3"></circle>
+          <circle cx="6" cy="12" r="3"></circle>
+          <circle cx="18" cy="19" r="3"></circle>
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+        </symbol>
+        <symbol id="i-shuffle" viewBox="0 0 24 24">
+          <polyline points="16 3 21 3 21 8"></polyline>
+          <line x1="4" y1="20" x2="21" y2="3"></line>
+          <polyline points="21 16 21 21 16 21"></polyline>
+          <line x1="15" y1="15" x2="21" y2="21"></line>
+          <line x1="4" y1="4" x2="9" y2="9"></line>
+        </symbol>
+        <symbol id="i-delete" viewBox="0 0 24 24">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path
+            d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+          ></path>
+          <line x1="10" y1="11" x2="10" y2="17"></line>
+          <line x1="14" y1="11" x2="14" y2="17"></line>
+        </symbol>
+        <symbol id="i-github" viewBox="0 0 24 24">
+          <path
+            d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"
+          ></path>
+        </symbol>
+        <symbol id="i-more" viewBox="0 0 24 24">
+          <circle cx="5" cy="12" r="1.75"></circle>
+          <circle cx="12" cy="12" r="1.75"></circle>
+          <circle cx="19" cy="12" r="1.75"></circle>
+        </symbol>
+      </defs>
+    </svg>
+
+    <div class="wrap">
+      <header class="head">
+        <div class="head__title">
+          <img class="logo" src="../../icons/icon-96.png" alt="" />
+          <h1>CuePoint</h1>
+          <span id="count" class="count">Loading…</span>
+        </div>
+        <div class="head__tools">
+          <span class="search-wrap">
+            <svg class="icon" aria-hidden="true">
+              <use href="#i-search"></use>
+            </svg>
+            <input
+              id="search"
+              class="search"
+              type="search"
+              placeholder="Search labels, titles, channels"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </span>
+          <span class="pagesize-wrap">
+            <label for="pageSize" class="pagesize-label">Show</label>
+            <select id="pageSize" class="pagesize">
+              <option value="10">10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="all">All</option>
+            </select>
+          </span>
+          <div class="head__actions">
+            <button id="import" class="btn-outline" type="button">
+              <svg class="icon" aria-hidden="true">
+                <use href="#i-import"></use>
+              </svg>
+              <span>Import JSON</span>
+            </button>
+            <button id="export" class="btn-outline" type="button">
+              <svg class="icon" aria-hidden="true">
+                <use href="#i-export"></use>
+              </svg>
+              <span>Export JSON</span>
+            </button>
+            <button id="random" class="btn-outline" type="button">
+              <svg class="icon" aria-hidden="true">
+                <use href="#i-shuffle"></use>
+              </svg>
+              <span>Play Random Moment</span>
+            </button>
+          </div>
+          <div class="head__mobile-tools">
+            <button id="mobileRandomBtn" class="btn-outline" type="button" title="Play Random Moment">
+              <svg class="icon" aria-hidden="true">
+                <use href="#i-shuffle"></use>
+              </svg>
+              <span>Random</span>
+            </button>
+            <button
+              id="moreBtn"
+              class="btn-outline more-btn"
+              type="button"
+              aria-label="More options"
+              aria-expanded="false"
+            >
+              <svg class="icon" aria-hidden="true">
+                <use href="#i-more"></use>
+              </svg>
+            </button>
+          </div>
+          <button id="cloudBtn" class="btn-outline cloud-btn" type="button" aria-label="Storage and sync: Local" aria-controls="cloudPopover" aria-expanded="false" aria-haspopup="dialog">
+            <span id="cloudDot" class="cloud-dot cloud-dot--local" aria-hidden="true"></span>
+            <span id="cloudBtnLabel">Local</span>
+          </button>
+          <input
+            id="importFile"
+            type="file"
+            accept="application/json,.json"
+            hidden
+          />
+        </div>
+      </header>
+
+      <!-- Mobile Overflow Menu -->
+      <div id="moreMenu" class="more-menu" role="menu" aria-label="More actions" hidden>
+        <div id="moreCount" class="more-menu__count"></div>
+        <div class="more-menu__row">
+          <label for="mobilePageSize">Per page</label>
+          <select id="mobilePageSize" class="pagesize">
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="all">All</option>
+          </select>
+        </div>
+        <button id="mobileImportBtn" class="more-menu__item" type="button" role="menuitem">
+          <svg class="icon" aria-hidden="true"><use href="#i-import"></use></svg>
+          <span>Import JSON</span>
+        </button>
+        <button id="mobileExportBtn" class="more-menu__item" type="button" role="menuitem">
+          <svg class="icon" aria-hidden="true"><use href="#i-export"></use></svg>
+          <span>Export JSON</span>
+        </button>
+      </div>
+
+      <!-- Cloud Sync Popover -->
+      <div
+        id="cloudPopover"
+        class="cloud-pop"
+        role="dialog"
+        aria-label="Firebase Cloud Sync"
+        hidden
+      >
+        <div class="cloud-pop__head">
+          <span class="cloud-pop__title">Storage &amp; Live Sync</span>
+          <div class="cloud-switch" role="group" aria-label="Sync mode">
+            <button id="cloudModeLocal" class="cloud-switch__btn active" type="button">
+              Local
+            </button>
+            <button id="cloudModeCloud" class="cloud-switch__btn" type="button">
+              Cloud (BYOC)
+            </button>
+          </div>
+        </div>
+
+        <div id="cloudLocalPane" class="cloud-local-card">
+          <p class="cloud-local-card__title">Stored locally on this device</p>
+          <p class="cloud-local-card__desc">
+            This library stays on this device and is separate from any cloud account.
+            Use <strong>Export JSON</strong> anytime for a backup.
+          </p>
+          <div id="cloudLocalResumeHint" class="cloud-local-card__hint" hidden>
+            Cloud sync is paused. Switch back to <strong>Cloud (BYOC)</strong> to resume,
+            or sign out of the saved account.
+            <div class="cloud-pop__actions">
+              <button id="cloudPausedSignOut" class="btn-sm danger-btn" type="button">Sign Out</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="cloudSetupPane" class="cloud-pop__body" hidden>
+          <label class="cloud-field">
+            <span>Paste Firebase config snippet (npm or script tag)</span>
+            <textarea
+              id="cloudSnippet"
+              rows="4"
+              placeholder='const firebaseConfig = {
+  apiKey: "...",
+  databaseURL: "https://...-default-rtdb.firebaseio.com",
+  ...
+};'
+            ></textarea>
+          </label>
+          <p id="cloudConfigStatus" class="cloud-config-status" hidden></p>
+          <label id="cloudDbUrlFallbackWrap" class="cloud-field" hidden>
+            <span>Realtime Database URL</span>
+            <input
+              id="cloudDbUrl"
+              type="url"
+              placeholder="https://your-app-default-rtdb.firebaseio.com"
+              autocomplete="off"
+            />
+          </label>
+          <label class="cloud-field">
+            <span>Email</span>
+            <input id="cloudEmail" type="email" placeholder="you@example.com" />
+          </label>
+          <label class="cloud-field">
+            <span>Password</span>
+            <input id="cloudPassword" type="password" placeholder="••••••••" />
+          </label>
+          <div class="cloud-pop__actions">
+            <button id="cloudSignIn" class="btn-sm primary cloud-signin-btn" type="button">
+              Sign In &amp; Connect
+            </button>
+          </div>
+          <button id="cloudGuideBtn" class="cloud-guide-btn" type="button">
+            <span>How to set up Firebase &amp; Security Rules</span>
+            <span aria-hidden="true">↗</span>
+          </button>
+        </div>
+
+        <div id="cloudConnectedPane" class="cloud-pop__body" hidden>
+          <div class="cloud-info">
+            <div class="cloud-info__row">
+              <span class="cloud-info__k">Account</span>
+              <span id="cloudConnEmail" class="cloud-info__v"></span>
+            </div>
+            <div class="cloud-info__row">
+              <span class="cloud-info__k">Database</span>
+              <span id="cloudConnDb" class="cloud-info__v"></span>
+            </div>
+            <div class="cloud-info__row">
+              <span class="cloud-info__k">Stream</span>
+              <span id="cloudConnState" class="cloud-info__v"></span>
+            </div>
+          </div>
+          <div class="cloud-pop__actions">
+            <button id="cloudSyncNow" class="btn-sm" type="button">Sync Now</button>
+            <button id="cloudImportLocal" class="btn-sm" type="button">Copy Local Moments</button>
+            <button id="cloudSignOut" class="btn-sm danger-btn" type="button">Sign Out</button>
+          </div>
+          <p id="cloudSyncMsg" class="cloud-sync-msg" role="status" hidden></p>
+        </div>
+
+        <p id="cloudPending" class="cloud-pop__note" role="status" hidden></p>
+        <section id="cloudConflicts" class="cloud-conflicts" aria-labelledby="cloudConflictsTitle" hidden>
+          <h2 id="cloudConflictsTitle">Sync conflicts</h2>
+          <p class="cloud-pop__note">These changes weren’t applied. Copy a note to re-save it where you want, or dismiss the conflict if you no longer need it.</p>
+          <ul id="cloudConflictList" class="cloud-conflicts__list"></ul>
+        </section>
+
+        <p id="cloudErr" class="cloud-pop__err" role="alert" hidden></p>
+      </div>
+
+      <p id="status" class="status" role="status" hidden></p>
+
+      <main>
+        <ul id="list" class="list" aria-live="polite"></ul>
+        <nav id="pager" class="pager" aria-label="Pagination" hidden></nav>
+        <div id="empty" class="empty" hidden></div>
+      </main>
+
+      <footer class="foot">
+        <span>CuePoint<span id="version" class="foot__version"></span></span>
+        <a
+          href="https://github.com/Aadityajoshi151/Youtube-Moments"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <svg class="icon icon--fill" aria-hidden="true">
+            <use href="#i-github"></use>
+          </svg>
+          <span>GitHub Repo</span>
+        </a>
+      </footer>
+    </div>
+    <script src="../shared/schema.js"></script>
+    <script src="../shared/messages.js"></script>
+    <script src="../storage/firebase-auth.js"></script>
+    <script src="state.js"></script>
+    <script src="render.js"></script>
+    <script src="cloud-ui.js"></script>
+    <script src="moments.js"></script>
+  </body>
+</html>
