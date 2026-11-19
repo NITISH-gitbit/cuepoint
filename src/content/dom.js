@@ -4,11 +4,12 @@ var YTM = YTM || {};
   "use strict";
 
   const ROW_SELECTORS = [
-    "ytd-watch-metadata #top-level-buttons-computed",
-    "ytd-watch-metadata #actions #menu #top-level-buttons-computed",
-    "ytd-watch-metadata #actions-inner #menu",
-    "#top-level-buttons-computed",
+    "#actions #top-level-buttons-computed",
+    "#actions-inner #top-level-buttons-computed",
+    "#actions #menu",
+    "#actions-inner #menu",
   ];
+  const PLAYLIST = "ytd-playlist-panel-renderer, ytd-playlist-header-renderer";
 
   function onWatchPage() {
     return (
@@ -52,21 +53,24 @@ var YTM = YTM || {};
     return typeof node.getClientRects === "function" && node.getClientRects().length > 0;
   }
 
-  function findActionRow() {
-    for (const sel of ROW_SELECTORS) {
-      for (const node of document.querySelectorAll(sel)) {
-        if (isVisible(node)) return node;
-      }
-    }
-    return null;
+  function isVideoControl(node) {
+    return !node.closest(PLAYLIST) && isVisible(node);
   }
 
-  function findFallbackMount() {
-    return (
-      document.querySelector("ytd-watch-metadata #above-the-fold") ||
-      document.querySelector("ytd-watch-metadata") ||
-      null
-    );
+  function findButtonPlacement() {
+    let fallback = null;
+    for (const metadata of document.querySelectorAll("ytd-watch-metadata")) {
+      if (!isVideoControl(metadata)) continue;
+      for (const selector of ROW_SELECTORS) {
+        for (const row of metadata.querySelectorAll(selector)) {
+          if (isVideoControl(row)) return { row, fallback: null };
+        }
+      }
+      if (!fallback) {
+        fallback = Array.from(metadata.querySelectorAll("#above-the-fold")).find(isVideoControl) || metadata;
+      }
+    }
+    return { row: null, fallback };
   }
 
   YTM.contentDom = {
@@ -75,7 +79,6 @@ var YTM = YTM || {};
     getVideoEl,
     getTitle,
     getChannel,
-    findActionRow,
-    findFallbackMount,
+    findButtonPlacement,
   };
 })();

@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" />
+  <title>CuePoint playlist placement regression</title>
+  <style>
+    ytd-watch-metadata, ytd-playlist-panel-renderer, ytd-playlist-header-renderer { display: block; }
+  </style>
+  <body>
+    <ytd-playlist-panel-renderer id="playlist">
+      <div id="actions"><div id="top-level-buttons-computed"><button>Playlist action</button></div></div>
+    </ytd-playlist-panel-renderer>
+    <video class="html5-main-video"></video>
+    <p><output id="result">Running playlist placement checks…</output></p>
+    <script src="/src/shared/schema.js"></script>
+    <script>
+      history.replaceState(null, "", "/watch?v=videoA&list=playlistA");
+      const writes = [];
+      YTM.messages = {
+        ACTIONS: { GET_ACTIVE_LIBRARY: "library", ADD_MOMENT: "save" },
+        async sendAction(type, payload) {
+          if (type === "library") return { libraryKey: "local" };
+          writes.push(payload);
+          return {};
+        },
+      };
+    </script>
+    <script src="/src/content/dom.js"></script>
+    <script src="/src/content/popover.js"></script>
+    <script src="/src/content/content.js"></script>
+    <script>
+      const playlist = document.querySelector("#playlist");
+      const buttons = () => document.querySelectorAll("#ytm-save-btn");
+      const fallback = () => document.querySelector(".ytm-save-fallback");
+      function check(value, description) {
+        if (!value) throw new Error(description);
+      }
+      async function until(predicate, description) {
+        for (let attempts = 0; attempts < 60; attempts++) {
+          if (predicate()) return;
+          await new Promise((resolve) => setTimeout(resolve, 25));
+        }
+        throw new Error(description);
+      }
+      function makeVideoActions(label) {
+        const actions = document.createElement("div");
+        actions.id = "actions";
+        const row = document.createElement("div");
+        row.id = "top-level-buttons-computed";
+        row.append(Object.assign(document.createElement("button"), { textContent: label }));
+        actions.append(row);
+        return { actions, row };
+      }
+      async function run() {
+        check(buttons().length === 0, "Do not inject into the playlist while video metadata is absent");
+        const metadata = document.createElement("ytd-watch-metadata");
+        const info = document.createElement("div");
+        info.id = "above-the-fold";
+        info.textContent = "Current video title";
+        const nestedPlaylist = document.createElement("ytd-playlist-header-renderer");
+        nestedPlaylist.append(makeVideoActions("Nested playlist action").actions);
+        metadata.append(info, nestedPlaylist);
+        document.body.append(metadata);
+        await until(() => fallback()?.parentElement === info, "Fallback stays in video metadata");
+        const savedButton = buttons()[0];
+        check(!playlist.contains(savedButton) && !nestedPlaylist.contains(savedButton), "Never use playlist controls");
+
+        const first = makeVideoActions("Like and share first video");
+        first.actions.hidden = true;
+        info.append(first.actions);
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+        check(fallback()?.contains(savedButton), "Hidden video controls must not replace the fallback");
+        first.actions.hidden = false;
+        await until(() => savedButton.parentElement === first.row, "Use the video row when it becomes visible");
+        check(!fallback() && buttons().length === 1, "Promotion removes the fallback and retains one button");
+
+        const next = makeVideoActions("Like and share second video");
+        history.pushState(null, "", "/watch?v=videoB&list=playlistA");
+        playlist.append(first.actions);
+        info.append(next.actions);
+        window.dispatchEvent(new Event("yt-navigate-finish"));
+        await until(() => savedButton.parentElement === next.row, "Move the old button to the next video's row");
+        check(buttons().length === 1, "Navigation should not duplicate the button");
+
+        document.querySelector("video").currentTime = 12.6;
+        savedButton.click();
+        await until(() => !!document.querySelector(".ytm-popover__input"), "Save button opens the real note popover");
+        document.querySelector(".ytm-popover__input").value = "Playlist video note";
+        document.querySelector(".ytm-popover__btn--primary").click();
+        await until(() => writes.length === 1, "Save dispatches a background message");
+        check(writes[0].videoId === "videoB" && writes[0].timestamp === 12 && writes[0].note === "Playlist video note",
+          "Save targets the current video and playback second, not the playlist");
+
+        next.actions.remove();
+        await until(() => fallback()?.contains(savedButton), "Re-render falls back to video metadata until controls return");
+        history.pushState(null, "", "/feed/subscriptions");
+        window.dispatchEvent(new Event("yt-navigate-finish"));
+        check(buttons().length === 0 && !fallback(), "Leaving the watch page removes the button");
+      }
+      function report(result) {
+        document.body.dataset.result = result;
+        document.querySelector("#result").textContent = result === "passed" ? "Playlist placement checks passed." : result;
+      }
+      run().then(() => report("passed"), (error) => report(error.message));
+    </script>
+  </body>
+</html>

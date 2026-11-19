@@ -14,6 +14,8 @@ var YTM = YTM || {};
   let pollTimer = null;
   let rafScheduled = false;
   let saving = false;
+  let saveButton = null;
+  let fallbackWrap = null;
 
   function makeButton() {
     const btn = document.createElement("button");
@@ -30,30 +32,26 @@ var YTM = YTM || {};
   }
 
   function ensureButton() {
-    if (!dom.onWatchPage()) return false;
-
-    const existing = document.getElementById(BTN_ID);
-    if (existing && document.contains(existing)) return true;
-
-    const row = dom.findActionRow();
-    if (row) {
-      row.appendChild(makeButton());
-      return true;
+    const placement = dom.onWatchPage() ? dom.findButtonPlacement() : null;
+    if (!placement?.row && !placement?.fallback) {
+      saveButton?.remove();
+      fallbackWrap?.remove();
+      return false;
     }
-    return false;
-  }
 
-  function injectFallback() {
-    if (!dom.onWatchPage() || document.getElementById(BTN_ID)) return;
-    const mount = dom.findFallbackMount();
-    if (!mount) {
-      console.warn(LOG, "no mount point found — YouTube layout may have changed");
-      return;
+    saveButton ||= makeButton();
+    if (placement.row) {
+      if (saveButton.parentElement !== placement.row) placement.row.appendChild(saveButton);
+      fallbackWrap?.remove();
+    } else {
+      if (!fallbackWrap) {
+        fallbackWrap = document.createElement("div");
+        fallbackWrap.className = "ytm-save-fallback";
+      }
+      if (saveButton.parentElement !== fallbackWrap) fallbackWrap.appendChild(saveButton);
+      if (fallbackWrap.parentElement !== placement.fallback) placement.fallback.appendChild(fallbackWrap);
     }
-    const wrap = document.createElement("div");
-    wrap.style.margin = "8px 0 0";
-    wrap.appendChild(makeButton());
-    mount.prepend(wrap);
+    return true;
   }
 
   function stopPolling() {
@@ -65,24 +63,11 @@ var YTM = YTM || {};
 
   function startPolling() {
     stopPolling();
-    if (!dom.onWatchPage()) return;
-    if (ensureButton()) return;
+    if (ensureButton() || !dom.onWatchPage()) return;
 
     let attempts = 0;
     pollTimer = setInterval(() => {
-      attempts++;
-      if (!dom.onWatchPage()) {
-        stopPolling();
-        return;
-      }
-      if (ensureButton()) {
-        stopPolling();
-        return;
-      }
-      if (attempts >= MAX_POLL_ATTEMPTS) {
-        stopPolling();
-        injectFallback();
-      }
+      if (ensureButton() || !dom.onWatchPage() || ++attempts >= MAX_POLL_ATTEMPTS) stopPolling();
     }, POLL_INTERVAL_MS);
   }
 
@@ -178,8 +163,9 @@ var YTM = YTM || {};
   }
 
   const observer = new MutationObserver(scheduleEnsure);
-  observer.observe(document.documentElement, { childList: true, subtree: true });
+  observer.observe(document.documentElement, { childList: true, subtree: true, attributeFilter: ["hidden"] });
 
+  window.addEventListener("resize", scheduleEnsure);
   window.addEventListener("yt-navigate-finish", () => {
     popover.closePopover();
     startPolling();

@@ -1,3 +1,7 @@
+.ytm-save-fallback {
+  margin-block-start: 8px;
+}
+
 /* Injected "Save moment" button — sits in the YouTube action row */
 .ytm-save-btn {
   display: inline-flex;
