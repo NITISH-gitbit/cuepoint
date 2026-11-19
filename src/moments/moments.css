@@ -14,7 +14,7 @@
   --accent: #ff4e45;
   --accent-text: #ff7b74;
   --accent-soft: rgba(255, 78, 69, 0.14);
-  --on-accent: #ffffff;
+  --on-accent: #18181d;
   --danger: #ff6b6b;
   --info: #5b9dff;
   --success: #4ade80;
@@ -873,19 +873,12 @@ body {
   color: var(--faint);
   font-size: 13px;
 }
-.foot a {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
+.foot__link {
   color: var(--muted);
-  text-decoration: none;
+  text-underline-offset: 0.18em;
 }
-.foot a:hover {
+.foot__link:hover {
   color: var(--accent-text);
-}
-.foot .icon {
-  width: 18px;
-  height: 18px;
 }
 .foot__version {
   margin-left: 8px;

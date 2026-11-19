@@ -92,26 +92,27 @@ var YTM = YTM || {};
       host.appendChild(box);
       positionBox(box, anchorEl);
 
-      function finish(result) {
+      function finish(result, restoreFocus = true) {
         if (settled) return;
         settled = true;
         activeCleanup = null;
         document.removeEventListener("mousedown", onDocMouseDown, true);
         document.removeEventListener("keydown", onDocKeyDown, true);
         box.remove();
+        if (restoreFocus && anchorEl?.isConnected) anchorEl.focus({ preventScroll: true });
         resolve(result);
       }
 
-      activeCleanup = finish;
+      activeCleanup = () => finish(null, false);
 
       function onDocMouseDown(e) {
         if (!box.contains(e.target) && (!anchorEl || !anchorEl.contains(e.target))) {
-          finish(null);
+          finish(null, false);
         }
       }
 
       function onDocKeyDown(e) {
-        if (e.key === "Escape") {
+        if (e.key === "Escape" && !e.isComposing) {
           e.preventDefault();
           e.stopPropagation();
           finish(null);
@@ -125,12 +126,9 @@ var YTM = YTM || {};
       }
 
       input.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
+        if (e.key === "Enter" && !e.isComposing) {
           e.preventDefault();
           finish(input.value.trim());
-        } else if (e.key === "Escape") {
-          e.preventDefault();
-          finish(null);
         }
       });
 
@@ -140,7 +138,7 @@ var YTM = YTM || {};
       document.addEventListener("mousedown", onDocMouseDown, true);
       document.addEventListener("keydown", onDocKeyDown, true);
 
-      setTimeout(() => input.focus(), 0);
+      input.focus({ preventScroll: true });
     });
   }
 

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Privacy Policy — CuePoint</title>
+    <link rel="icon" type="image/svg+xml" href="../../icons/cuepoint.svg" />
+    <link rel="stylesheet" href="moments.css" />
+    <style>
+      .privacy { max-width: 720px; margin-inline: auto; padding: 28px 20px 50px; line-height: 1.6; }
+      .privacy h1 { line-height: 1.2; }
+      .privacy h2 { margin-top: 1.5em; font-size: 1.1rem; }
+      .privacy p, .privacy li { color: var(--muted); }
+      .privacy a { color: var(--accent-text); text-underline-offset: 0.18em; }
+    </style>
+  </head>
+  <body>
+    <main class="privacy">
+      <a href="moments.html">Back to CuePoint</a>
+      <h1>CuePoint Privacy Policy</h1>
+      <p>CuePoint does not send bookmark data off your device in local mode. There is no developer-operated sync server, advertising, or analytics in CuePoint.</p>
+
+      <h2>What CuePoint stores on this device</h2>
+      <p>When you save a moment, CuePoint reads the video ID, playback timestamp, video title, and available channel name and link from the YouTube watch page. It stores that bookmark and any note you add in your Firefox profile. It does not record a history of videos you do not save. An exported JSON file contains the bookmarks and notes in the active library; treat it as private if the contents are private.</p>
+
+      <h2>What optional Firebase sync sends</h2>
+      <p>Cloud sync is off by default. If you choose to connect and grant permission, Firebase sync uses the project you configure:</p>
+      <ul>
+        <li>Google Firebase Authentication receives your Firebase sign-in email and password and issues session tokens. CuePoint stores the account configuration and tokens in your Firefox profile to keep sync working. It does not save your password in extension storage.</li>
+        <li>Your Firebase Realtime Database receives bookmarks in that cloud library: YouTube URLs, timestamps, titles, channel information, optional notes, and record identifiers and versions needed to sync changes.</li>
+      </ul>
+      <p>Libraries are separate. Signing in does not copy existing local bookmarks to Firebase. The cloud library can receive them only if you explicitly copy or import them.</p>
+
+      <h2>How to stop sync or remove data</h2>
+      <p>Switch to <strong>Local</strong> to pause sync, log out to remove the saved session from CuePoint, or revoke the optional permissions in Firefox’s Add-ons Manager. These actions do not delete the data already in your Firebase project, nor do they clear cached bookmarks on the device.</p>
+      <p>Delete individual moments in the library they belong to. To remove all local extension data from a profile, remove the extension from Firefox. To remove your cloud data or authentication account, manage them separately in your Firebase project. Google handles data processed by Firebase under its <a href="https://firebase.google.com/support/privacy">Firebase privacy and security terms</a>.</p>
+
+      <h2>Questions</h2>
+      <p>Use the support contact on the CuePoint Firefox Add-ons listing. Do not send passwords, tokens, or private notes with a support request.</p>
+    </main>
+  </body>
+</html>

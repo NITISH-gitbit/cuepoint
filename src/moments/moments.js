@@ -211,9 +211,11 @@ var YTM = YTM || {};
       showEmpty(
         "No moments yet",
         momentsRender.el("p", {}, [
-          "Pause any YouTube video and hit ",
+          "Open a video on desktop YouTube and choose ",
           momentsRender.el("code", { textContent: "Save moment" }),
-          " below it. Your saved points show up here.",
+          " below the player. Add a note if you like, then choose ",
+          momentsRender.el("code", { textContent: "Save" }),
+          ". Open CuePoint from Firefox’s Extensions menu or toolbar to find it again.",
         ]),
       );
       return;
@@ -502,7 +504,7 @@ var YTM = YTM || {};
     const a = document.createElement("a");
     const stamp = new Date().toISOString().slice(0, 10);
     a.href = url;
-    a.download = `youtube-moments-${stamp}.json`;
+    a.download = `cuepoint-moments-${stamp}.json`;
     document.body.appendChild(a);
     a.click();
     a.remove();

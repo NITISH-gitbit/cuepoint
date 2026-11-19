@@ -32,10 +32,7 @@ var YTM = YTM || {};
         const candidate = schema.createMoment(payload);
         const video = model.listMoments(model.library(state, key)).filter((m) => m.videoId === candidate.videoId);
         const spot = video.find((m) => m.timestamp === candidate.timestamp);
-        if (spot) {
-          if (!candidate.note || candidate.note === spot.note) return spot;
-          return model.change(state, key, "edit", { ...spot, note: candidate.note, updatedAt: Date.now() }, spot.version);
-        }
+        if (spot) return { ...spot, alreadySaved: true };
         if (video.length >= model.limit) throw new Error(`Maximum of ${model.limit} saved moments reached for this video.`);
         return model.change(state, key, "add", candidate);
       });
@@ -175,18 +172,30 @@ var YTM = YTM || {};
   if (ext) {
     const model = YTM.syncModel.createSyncModel(YTM.schema);
     const repo = YTM.storage.createLocalRepo(indexedDB, model.initialState);
+    const consent = YTM.cloudConsent.createCloudConsent(ext);
     const sync = YTM.syncManager.createSyncManager({
       repo, model, auth: YTM.firebaseAuth, createTransport: YTM.firebaseRtdb.createFirebaseTransport,
+      checkConsent: consent.isGranted,
       onStatusChange: ({ conflicts, ...status }, momentsRevision) => ext.storage.local.set({
         syncStatus: { ...status, conflictCount: conflicts.length }, momentsRevision,
       }),
     });
     const coordinator = createCoordinator({ repo, schema: YTM.schema, model, actions: YTM.messages.ACTIONS, sync });
 
+    ext.permissions.onRemoved.addListener((removed) => {
+      if (consent.affectsCloud(removed)) sync.pauseForConsent().catch(() => {});
+    });
+
+    const { CLOUD_SIGN_IN, CLOUD_SIGN_UP, CLOUD_SIGN_OUT, CLOUD_SET_MODE, CLOUD_SYNC_NOW } = YTM.messages.ACTIONS;
+    const managerActions = new Set([CLOUD_SIGN_IN, CLOUD_SIGN_UP, CLOUD_SIGN_OUT, CLOUD_SET_MODE, CLOUD_SYNC_NOW]);
     ext.action.onClicked.addListener(() => ext.tabs.create({ url: ext.runtime.getURL("src/moments/moments.html") }));
     ext.runtime.onMessage.addListener((message) => {
       if (typeof message?.type !== "string" || !message.type.startsWith("ytm:")) return false;
-      return coordinator.handleMessage(message).catch((error) => ({ ok: false, error: error.message || "Unknown error." }));
+      const dispatch = () => coordinator.handleMessage(message);
+      // Capture cloud user intents before waiting so revocation can cancel them.
+      // Library commands wait until the local/cloud library switch is durable.
+      const result = managerActions.has(message.type) ? dispatch() : sync.ready().then(dispatch);
+      return result.catch((error) => ({ ok: false, error: error.message || "Unknown error." }));
     });
 
     ext.alarms.onAlarm.addListener((alarm) => {

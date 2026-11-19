@@ -4,7 +4,7 @@ var YTM = YTM || {};
   "use strict";
 
   const BTN_ID = "ytm-save-btn";
-  const LOG = "[YT Moments]";
+  const LOG = "[CuePoint]";
   const POLL_INTERVAL_MS = 500;
   const MAX_POLL_ATTEMPTS = 40;
 
@@ -128,7 +128,7 @@ var YTM = YTM || {};
       });
       if (note === null) return;
 
-      await messages.sendAction(ACTIONS.ADD_MOMENT, {
+      const result = await messages.sendAction(ACTIONS.ADD_MOMENT, {
         libraryKey,
         videoId,
         timestamp,
@@ -138,7 +138,15 @@ var YTM = YTM || {};
         note,
       });
 
-      flashButton(btn, "Saved", "ytm-save-btn--done");
+      if (result.alreadySaved) {
+        flashButton(btn, "Already saved", "ytm-save-btn--done");
+        popover.showNotice({
+          anchorEl: btn,
+          message: "This timestamp is already saved. Open CuePoint and choose Edit on the saved timestamp to change its note.",
+        });
+      } else {
+        flashButton(btn, "Saved", "ytm-save-btn--done");
+      }
     } catch (err) {
       console.error(LOG, "failed to save", err);
       const msg = (err && err.message) || "";

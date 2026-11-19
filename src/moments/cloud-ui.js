@@ -3,17 +3,10 @@ var YTM = YTM || {};
 (function () {
   "use strict";
 
-  const { messages, firebaseAuth, momentsRender, schema } = YTM;
+  const { messages, firebaseAuth, momentsRender, schema, cloudConsent } = YTM;
   const { el } = momentsRender;
   const { ACTIONS } = messages;
   const ext = messages.getExtApi();
-
-  const CLOUD_ORIGINS = [
-    "https://identitytoolkit.googleapis.com/*",
-    "https://securetoken.googleapis.com/*",
-    "https://*.firebaseio.com/*",
-    "https://*.firebasedatabase.app/*",
-  ];
 
   function initCloudUi(onLibraryChange) {
     const cloudBtn = document.getElementById("cloudBtn");
@@ -51,6 +44,11 @@ var YTM = YTM || {};
     const conflictsEl = document.getElementById("cloudConflicts");
     const conflictList = document.getElementById("cloudConflictList");
     const cloudErrEl = document.getElementById("cloudErr");
+    const consent = cloudConsent.createCloudConsent(ext);
+    const disclosure = el("p", { className: "cloud-local-card__desc", hidden: true,
+      textContent: "Cloud Sync sends saved YouTube links, timestamps, video details, and notes to your Firebase project. Google Firebase Authentication receives your email, password at sign-in, and session credentials. You can revoke data permissions in Firefox’s Add-ons Manager under Permissions and Data. " });
+    disclosure.append(el("a", { href: "privacy.html", target: "_blank", rel: "noopener", textContent: "Privacy Policy" }));
+    localPane.before(disclosure);
 
     const operationButtons = [modeLocalBtn, modeCloudBtn, signInBtn, signOutBtn,
       pausedSignOutBtn, syncNowBtn, importLocalBtn];
@@ -143,6 +141,7 @@ var YTM = YTM || {};
       modeCloudBtn.classList.toggle("active", isCloud);
       modeLocalBtn.setAttribute("aria-pressed", String(!isCloud));
       modeCloudBtn.setAttribute("aria-pressed", String(isCloud));
+      disclosure.hidden = !isCloud && !currentStatus.hasCredentials;
 
       if (!isCloud) {
         localPane.hidden = false;
@@ -308,15 +307,6 @@ var YTM = YTM || {};
       if (opening && !busy) refreshStatus();
     }
 
-    async function requestCloudPermissions() {
-      if (!ext || !ext.permissions || !ext.permissions.request) return true;
-      const granted = await ext.permissions.request({ origins: CLOUD_ORIGINS });
-      if (!granted) {
-        throw new Error("Network permission is required for Firebase Cloud Sync.");
-      }
-      return true;
-    }
-
     function handleSignIn() {
       updateParsedPreview();
       const databaseURL = parsedConfig.databaseURL || dbUrlEl.value.trim();
@@ -328,7 +318,7 @@ var YTM = YTM || {};
 
       const credentials = { apiKey: parsedConfig.apiKey, databaseURL, email: emailEl.value, password: passEl.value };
       runOperation(async () => {
-        await requestCloudPermissions();
+        await consent.request();
         await requestStatus(ACTIONS.CLOUD_SIGN_IN, credentials);
         passEl.value = "";
       });
@@ -344,7 +334,7 @@ var YTM = YTM || {};
 
     modeCloudBtn.addEventListener("click", () => {
       runOperation(async () => {
-        if (currentStatus.hasCredentials) await requestCloudPermissions();
+        if (currentStatus.hasCredentials) await consent.request();
         await requestStatus(ACTIONS.CLOUD_SET_MODE, { mode: "cloud" });
       });
     });

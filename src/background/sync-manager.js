@@ -6,12 +6,16 @@ var YTM = YTM || {};
   const { createWriteQueue } = typeof module !== "undefined" && module.exports ? require("./queue") : YTM.queue;
   const stopped = () => new DOMException("Sync session retired.", "AbortError");
 
-  function createSyncManager({ repo, model, auth, createTransport, onStatusChange,
+  const consentRequired = () => new Error("Firefox data and network permissions are required for Cloud Sync. Select Cloud to resume after granting them.");
+
+  function createSyncManager({ repo, model, auth, createTransport, onStatusChange, checkConsent = () => false,
     fetchFn = globalThis.fetch, EventSourceCtor, schedule = setTimeout, cancel = clearTimeout }) {
     let current = null;
     let authentication = null;
     let cloudSelected = false;
     let starting;
+    let pausing = null;
+    let consentRevision = 0;
     const transitions = createWriteQueue();
     let publishing = null;
     let dirty = false;
@@ -21,14 +25,34 @@ var YTM = YTM || {};
       if (!owns(session)) throw stopped();
     }
 
+    async function hasConsent() {
+      try {
+        return (await checkConsent()) === true;
+      } catch {
+        return false;
+      }
+    }
+
     function start() {
       if (!starting) {
-        starting = repo.read().then((state) => {
-          if (state.connection?.enabled) activate(state.connection);
+        starting = (async () => {
+          const state = await repo.read();
+          if (state.connection?.enabled) {
+            // If revocation raced startup, do not undo the pause even if Firefox
+            // already reports that the permissions have been granted again.
+            if (!consentRevision && await hasConsent() && !consentRevision) activate(state.connection);
+            else await (pausing || pauseForConsent());
+          }
+          await pausing;
           changed();
-        }).catch((error) => { starting = null; throw error; });
+        })().catch((error) => { starting = null; throw error; });
       }
       return starting;
+    }
+
+    async function ready() {
+      await start();
+      while (pausing) await pausing;
     }
 
     function statusFor(state) {
@@ -70,23 +94,58 @@ var YTM = YTM || {};
       return statusFor(await repo.read());
     }
 
-    function transition(work) {
-      return transitions.enqueue(async () => {
-        await start();
-        return work();
-      });
+    async function transition(work) {
+      await start();
+      return transitions.enqueue(work);
     }
 
-    function cancelAuthentication() {
-      authentication?.abort();
+    function cancelAuthentication(reason) {
+      authentication?.abort(reason);
       authentication = null;
     }
 
+    function pauseForConsent() {
+      ++consentRevision;
+      cancelAuthentication(consentRequired());
+      retire();
+      cloudSelected = false;
+      // Keep the account's local replica and pending edits. Turning Firefox
+      // permissions back on alone must not activate the persisted connection.
+      const pause = transitions.enqueue(() => repo.commit((state) => {
+        if (!state.connection?.enabled) return;
+        state.connection.enabled = false;
+        state.version++;
+      }));
+      pausing = pause;
+      const finished = () => {
+        if (pausing === pause) pausing = null;
+        changed();
+      };
+      pause.then(finished, finished);
+      return pause;
+    }
+
+    async function requireConsent(signal, revision = consentRevision) {
+      const assertCurrent = () => {
+        signal?.throwIfAborted();
+        if (revision !== consentRevision) throw consentRequired();
+      };
+      assertCurrent();
+      const granted = await hasConsent();
+      assertCurrent();
+      if (!granted) {
+        // Do not await a transition here; the caller may own the queue slot.
+        pauseForConsent().catch(() => {});
+        throw consentRequired();
+      }
+    }
+
     function timedFetch(signal) {
-      return (url, options = {}) => fetchFn(url, {
-        ...options,
-        signal: AbortSignal.any([signal, AbortSignal.timeout(20_000)]),
-      });
+      return async (url, options = {}) => {
+        await requireConsent(signal);
+        signal.throwIfAborted();
+        return fetchFn(url, { ...options, signal: AbortSignal.any([signal, AbortSignal.timeout(20_000)]) });
+      };
     }
 
     function detach(session) {
@@ -126,6 +185,10 @@ var YTM = YTM || {};
     }
 
     async function getToken(session) {
+      assertOwner(session);
+      // EventSource does not use the fetch wrapper. Its token lookup is also
+      // consent-gated, and the transport checks the abort signal before opening.
+      await requireConsent(session.controller.signal);
       assertOwner(session);
       const old = session.connection;
       if (!session.tokenInvalid && old.idToken && old.expiresAt > Date.now() + 60_000) return old.idToken;
@@ -332,6 +395,7 @@ var YTM = YTM || {};
         if (!key || !url || !address || typeof password !== "string" || !password) {
           throw new Error("A Firebase API key, database URL, email, and password are required.");
         }
+        await requireConsent(attempt.signal);
         const request = isSignUp ? auth.signUp : auth.signIn;
         const fetch = timedFetch(attempt.signal);
         const token = await request({ apiKey: key, email: address, password }, fetch);
@@ -341,13 +405,14 @@ var YTM = YTM || {};
         const probe = createTransport({ ...connection, getToken: async () => token.idToken, fetchFn: fetch, signal: attempt.signal });
         await probe.listVideos();
         return await transition(async () => {
-          attempt.signal.throwIfAborted();
+          await requireConsent(attempt.signal);
           retire();
           await repo.commit((state) => {
             attempt.signal.throwIfAborted();
             state.connection = connection;
             state.version++;
           });
+          attempt.signal.throwIfAborted();
           activate(connection);
           cloudSelected = false;
           changed();
@@ -361,17 +426,26 @@ var YTM = YTM || {};
     function setMode(mode) {
       if (mode !== "cloud" && mode !== "local") throw new Error("Unsupported sync mode.");
       cancelAuthentication();
+      const revision = consentRevision;
       return transition(async () => {
         const before = await repo.read();
         const enabled = mode === "cloud";
+        const assertCurrent = () => {
+          if (enabled && revision !== consentRevision) throw consentRequired();
+        };
+        assertCurrent();
+        if (enabled && before.connection) await requireConsent(null, revision);
+        assertCurrent();
         cloudSelected = enabled && !before.connection;
         if (before.connection && before.connection.enabled !== enabled) {
           retire();
           const connection = await repo.commit((state) => {
+            assertCurrent();
             state.connection = { ...state.connection, enabled };
             state.version++;
             return state.connection;
           });
+          assertCurrent();
           if (enabled) activate(connection);
         }
         changed();
@@ -391,9 +465,11 @@ var YTM = YTM || {};
     }
 
     async function syncNow() {
-      await start();
+      const revision = consentRevision;
+      await ready();
       const session = current;
-      if (!session) throw new Error("Cloud sync is not signed in.");
+      if (!session) throw new Error("Cloud Sync is paused or not signed in.");
+      await requireConsent(session.controller.signal, revision);
       clearRetry(session);
       session.terminal = false;
       session.full = true;
@@ -404,14 +480,17 @@ var YTM = YTM || {};
     }
 
     async function recover() {
-      await start();
-      if (current && !current.terminal && current.timer === null) {
-        if (!current.online) current.full = true;
-        wake();
+      await ready();
+      const session = current;
+      if (!session) return;
+      await requireConsent(session.controller.signal);
+      if (owns(session) && !session.terminal && session.timer === null) {
+        if (!session.online) session.full = true;
+        wake(session);
       }
     }
 
-    return { start, changed, wake, getStatus, connectWithCredentials, setMode, signOut, syncNow, recover };
+    return { start, ready, changed, wake, getStatus, connectWithCredentials, setMode, signOut, syncNow, recover, pauseForConsent };
   }
 
   YTM.syncManager = { createSyncManager };

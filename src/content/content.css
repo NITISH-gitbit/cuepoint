@@ -169,7 +169,7 @@ html[dark] .ytm-popover__btn {
 .ytm-popover__btn--primary {
   background: #ff4e45;
   border-color: #ff4e45;
-  color: #ffffff;
+  color: #18181d;
   font-weight: 600;
 }
 .ytm-popover__btn--primary:hover {
