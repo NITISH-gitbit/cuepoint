@@ -9,7 +9,7 @@ var YTM = YTM || {};
     "#actions #menu",
     "#actions-inner #menu",
   ];
-  const PLAYLIST = "ytd-playlist-panel-renderer, ytd-playlist-header-renderer";
+  const PLAYLIST = "ytd-playlist-panel-renderer, ytd-playlist-header-renderer, ytm-playlist-panel-renderer, ytm-playlist-header-renderer, ytm-playlist-panel, ytm-playlist-compact-video-renderer";
 
   function onWatchPage() {
     return (
@@ -29,12 +29,16 @@ var YTM = YTM || {};
     );
   }
 
+  function titleFromDocument() {
+    return document.title.replace(/\s*-\s*YouTube\s*$/, "").trim();
+  }
+
   function getTitle() {
     const el = document.querySelector(
       "h1.ytd-watch-metadata yt-formatted-string, h1.ytd-watch-metadata",
     );
     if (el && el.textContent.trim()) return el.textContent.trim();
-    return document.title.replace(/\s*-\s*YouTube\s*$/, "").trim();
+    return titleFromDocument();
   }
 
   function getChannel() {
@@ -73,12 +77,20 @@ var YTM = YTM || {};
     return { row: null, fallback };
   }
 
+  const mobile = YTM.createMobileDom({ document, getVideoId, isVideoControl, titleFromDocument });
+  const desktop = { getVideoEl, getTitle, getChannel, findButtonPlacement };
+
+  function adapter() {
+    if (location.hostname === "m.youtube.com") return mobile;
+    return !document.querySelector("ytd-watch-metadata") && document.querySelector("ytm-watch") ? mobile : desktop;
+  }
+
   YTM.contentDom = {
     onWatchPage,
     getVideoId,
-    getVideoEl,
-    getTitle,
-    getChannel,
-    findButtonPlacement,
+    getVideoEl: () => adapter().getVideoEl(),
+    getTitle: () => adapter().getTitle(),
+    getChannel: () => adapter().getChannel(),
+    findButtonPlacement: () => adapter().findButtonPlacement(),
   };
 })();

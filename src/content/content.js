@@ -40,6 +40,7 @@ var YTM = YTM || {};
     }
 
     saveButton ||= makeButton();
+    saveButton.classList.toggle("ytm-save-btn--mobile", !!placement.mobile);
     if (placement.row) {
       if (saveButton.parentElement !== placement.row) placement.row.appendChild(saveButton);
       fallbackWrap?.remove();
@@ -48,8 +49,13 @@ var YTM = YTM || {};
         fallbackWrap = document.createElement("div");
         fallbackWrap.className = "ytm-save-fallback";
       }
+      fallbackWrap.classList.toggle("ytm-save-fallback--mobile", !!placement.mobile);
       if (saveButton.parentElement !== fallbackWrap) fallbackWrap.appendChild(saveButton);
-      if (fallbackWrap.parentElement !== placement.fallback) placement.fallback.appendChild(fallbackWrap);
+      if (placement.after) {
+        if (placement.fallback.nextElementSibling !== fallbackWrap) placement.fallback.after(fallbackWrap);
+      } else if (fallbackWrap.parentElement !== placement.fallback) {
+        placement.fallback.appendChild(fallbackWrap);
+      }
     }
     return true;
   }
@@ -107,11 +113,12 @@ var YTM = YTM || {};
     saving = true;
     try {
       const { libraryKey } = await messages.sendAction(ACTIONS.GET_ACTIVE_LIBRARY);
+      if (!btn.isConnected || !dom.onWatchPage() || dom.getVideoId() !== videoId) return;
       const note = await popover.openNotePopover({
         anchorEl: btn,
         timeLabel: schema.formatTime(timestamp),
       });
-      if (note === null) return;
+      if (note === null || !dom.onWatchPage() || dom.getVideoId() !== videoId) return;
 
       const result = await messages.sendAction(ACTIONS.ADD_MOMENT, {
         libraryKey,
@@ -163,7 +170,11 @@ var YTM = YTM || {};
   }
 
   const observer = new MutationObserver(scheduleEnsure);
-  observer.observe(document.documentElement, { childList: true, subtree: true, attributeFilter: ["hidden"] });
+  observer.observe(document.documentElement, {
+    childList: true,
+    subtree: true,
+    attributeFilter: ["hidden", "video-id", "data-video-id"],
+  });
 
   window.addEventListener("resize", scheduleEnsure);
   window.addEventListener("yt-navigate-finish", () => {

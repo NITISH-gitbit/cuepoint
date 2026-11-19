@@ -20,6 +20,9 @@
           "websiteContent"
         ]
       }
+    },
+    "gecko_android": {
+      "strict_min_version": "142.0"
     }
   },
   "icons": {
@@ -61,11 +64,13 @@
   "content_scripts": [
     {
       "matches": [
-        "*://www.youtube.com/*"
+        "*://www.youtube.com/*",
+        "https://m.youtube.com/*"
       ],
       "js": [
         "src/shared/schema.js",
         "src/shared/messages.js",
+        "src/content/mobile-dom.js",
         "src/content/dom.js",
         "src/content/popover.js",
         "src/content/content.js"

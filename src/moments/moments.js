@@ -211,7 +211,7 @@ var YTM = YTM || {};
       showEmpty(
         "No moments yet",
         momentsRender.el("p", {}, [
-          "Open a video on desktop YouTube and choose ",
+          "Open a YouTube video in Firefox and choose ",
           momentsRender.el("code", { textContent: "Save moment" }),
           " below the player. Add a note if you like, then choose ",
           momentsRender.el("code", { textContent: "Save" }),

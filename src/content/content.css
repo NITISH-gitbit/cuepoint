@@ -70,10 +70,63 @@ html[dark] .ytm-save-btn--err {
   flex: 0 0 auto;
 }
 
+@media (pointer: coarse) {
+  .ytm-save-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+.ytm-save-btn--mobile {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.ytm-save-fallback.ytm-save-fallback--mobile {
+  display: flex;
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  padding-block: 4px;
+  padding-left: max(12px, env(safe-area-inset-left, 0px));
+  padding-right: max(12px, env(safe-area-inset-right, 0px));
+}
+
+.ytm-save-fallback.ytm-save-fallback--mobile .ytm-save-btn {
+  box-sizing: border-box;
+  min-width: 44px;
+  max-width: 100%;
+  min-height: 44px;
+  height: auto;
+  margin-left: 0;
+  padding-block: 6px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 /* ---------- Inline note capture popover ---------- */
 .ytm-popover {
+  --ytm-view-right: calc(var(--ytm-view-left, 0px) + var(--ytm-view-width, 100vw));
+  --ytm-view-bottom: calc(var(--ytm-view-top, 0px) + var(--ytm-view-height, 100vh));
+  --ytm-min-left: calc(var(--ytm-view-left, 0px) + max(12px, env(safe-area-inset-left, 0px)));
+  --ytm-max-right: calc(var(--ytm-view-right) - max(12px, env(safe-area-inset-right, 0px)));
+  --ytm-min-top: calc(var(--ytm-view-top, 0px) + max(12px, env(safe-area-inset-top, 0px)));
+  --ytm-max-bottom: calc(var(--ytm-view-bottom) - max(12px, env(safe-area-inset-bottom, 0px)));
+  --ytm-available-width: calc(var(--ytm-max-right) - var(--ytm-min-left));
+  --ytm-available-height: calc(var(--ytm-max-bottom) - var(--ytm-min-top));
+  --ytm-width: min(300px, var(--ytm-available-width));
+  --ytm-last-left: calc(var(--ytm-max-right) - var(--ytm-width));
+  --ytm-last-top: calc(var(--ytm-max-bottom) - var(--ytm-box-height, 0px));
+  --ytm-default-left: calc(var(--ytm-view-right) - var(--ytm-width) - 20px);
+  --ytm-default-top: calc(var(--ytm-view-bottom) - var(--ytm-box-height, 0px) - 72px);
+  position: fixed;
+  left: clamp(var(--ytm-min-left), var(--ytm-anchor-left, var(--ytm-default-left)), var(--ytm-last-left));
+  top: clamp(var(--ytm-min-top), var(--ytm-anchor-top, var(--ytm-default-top)), var(--ytm-last-top));
   z-index: 2147483647;
-  width: 300px;
+  display: flex;
+  flex-direction: column;
+  width: var(--ytm-width);
+  max-height: var(--ytm-available-height);
   padding: 12px;
   border-radius: 12px;
   background: #ffffff;
@@ -90,16 +143,33 @@ html[dark] .ytm-popover {
   box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55);
 }
 
-.ytm-popover--fixed {
-  position: fixed;
-  right: 20px;
-  bottom: 72px;
+.ytm-popover--compact {
+  --ytm-width: min(420px, var(--ytm-available-width));
+  /* Give the 44px input and action row priority over spacing. */
+  --ytm-spacing: calc((var(--ytm-available-height) - 90px) / 3);
+  left: calc(var(--ytm-min-left) + (var(--ytm-available-width) - var(--ytm-width)) / 2);
+  top: auto;
+  bottom: calc(100% - var(--ytm-max-bottom));
+  padding-block: clamp(0px, var(--ytm-spacing), 12px);
+}
+
+.ytm-popover--compact .ytm-popover__actions {
+  margin-top: clamp(0px, var(--ytm-spacing), 10px);
+}
+
+/* Only the note area scrolls when the keyboard leaves too little room. */
+.ytm-popover__body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .ytm-popover__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 8px;
   margin-bottom: 8px;
 }
 
@@ -146,6 +216,8 @@ html[dark] .ytm-popover__input {
 
 .ytm-popover__actions {
   display: flex;
+  flex: none;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
   margin-top: 10px;
@@ -180,7 +252,19 @@ html[dark] .ytm-popover__btn {
   filter: brightness(1.06);
 }
 
+.ytm-popover--compact .ytm-popover__input,
+.ytm-popover--compact .ytm-popover__btn {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.ytm-popover--compact .ytm-popover__input {
+  font-size: 16px; /* Avoid focus zoom on mobile. */
+}
+
 .ytm-popover--notice {
+  overflow-y: auto;
+  overflow-wrap: anywhere;
   font-size: 13px;
   line-height: 1.45;
 }

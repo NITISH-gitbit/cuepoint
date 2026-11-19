@@ -12,33 +12,65 @@ var YTM = YTM || {};
     }
   }
 
-  function positionBox(box, anchorEl) {
-    if (document.fullscreenElement || !anchorEl || !anchorEl.getBoundingClientRect) {
-      box.classList.add("ytm-popover--fixed");
-      return;
-    }
+  function trackPosition(box, anchorEl) {
+    const viewport = window.visualViewport;
+    const coarsePointer = window.matchMedia("(pointer: coarse)");
+    let frame = null;
 
-    const rect = anchorEl.getBoundingClientRect();
-    if (rect.width === 0 && rect.height === 0) {
-      box.classList.add("ytm-popover--fixed");
-      return;
-    }
+    function position() {
+      const width = viewport?.width || document.documentElement.clientWidth || window.innerWidth;
+      const height = viewport?.height || document.documentElement.clientHeight || window.innerHeight;
+      const left = viewport?.offsetLeft ?? 0;
+      const top = viewport?.offsetTop ?? 0;
+      const compact = coarsePointer.matches || width <= 480;
+      box.classList.toggle("ytm-popover--compact", compact);
+      box.style.setProperty("--ytm-view-width", `${width}px`);
+      box.style.setProperty("--ytm-view-height", `${height}px`);
+      box.style.setProperty("--ytm-view-left", `${left}px`);
+      box.style.setProperty("--ytm-view-top", `${top}px`);
+      if (compact) return;
 
-    const boxWidth = 300;
-    const boxHeight = box.offsetHeight || 132;
-    const left = Math.min(
-      Math.max(12, rect.left),
-      window.innerWidth - boxWidth - 12,
-    );
-    const spaceBelow = window.innerHeight - rect.bottom;
-    const top =
-      spaceBelow >= boxHeight + 16 || rect.top < boxHeight + 16
+      const boxHeight = box.getBoundingClientRect().height;
+      box.style.setProperty("--ytm-box-height", `${boxHeight}px`);
+      const rect = !document.fullscreenElement && anchorEl?.getBoundingClientRect();
+      if (!rect || (!rect.width && !rect.height)) {
+        box.style.removeProperty("--ytm-anchor-left");
+        box.style.removeProperty("--ytm-anchor-top");
+        return;
+      }
+
+      const spaceBelow = top + height - rect.bottom;
+      const spaceAbove = rect.top - top;
+      const anchorTop = spaceBelow >= boxHeight + 16 || spaceAbove < boxHeight + 16
         ? rect.bottom + 8
         : rect.top - boxHeight - 8;
+      box.style.setProperty("--ytm-anchor-left", `${rect.left}px`);
+      box.style.setProperty("--ytm-anchor-top", `${anchorTop}px`);
+    }
 
-    box.style.position = "fixed";
-    box.style.left = `${left}px`;
-    box.style.top = `${Math.max(12, top)}px`;
+    function schedulePosition() {
+      if (frame !== null) return;
+      frame = requestAnimationFrame(() => {
+        frame = null;
+        position();
+      });
+    }
+
+    position();
+    // The software keyboard can resize and pan the visual viewport without resizing the page.
+    viewport?.addEventListener("resize", schedulePosition);
+    viewport?.addEventListener("scroll", schedulePosition);
+    coarsePointer.addEventListener("change", schedulePosition);
+    window.addEventListener("resize", schedulePosition);
+    window.addEventListener("scroll", schedulePosition);
+    return () => {
+      if (frame !== null) cancelAnimationFrame(frame);
+      viewport?.removeEventListener("resize", schedulePosition);
+      viewport?.removeEventListener("scroll", schedulePosition);
+      coarsePointer.removeEventListener("change", schedulePosition);
+      window.removeEventListener("resize", schedulePosition);
+      window.removeEventListener("scroll", schedulePosition);
+    };
   }
 
   function openNotePopover({ anchorEl, timeLabel }) {
@@ -73,6 +105,11 @@ var YTM = YTM || {};
       input.placeholder = "Add a note (optional)…";
       input.maxLength = 500;
       input.setAttribute("aria-label", "Moment note");
+      input.setAttribute("enterkeyhint", "done");
+
+      const body = document.createElement("div");
+      body.className = "ytm-popover__body";
+      body.append(header, input);
 
       const actions = document.createElement("div");
       actions.className = "ytm-popover__actions";
@@ -88,15 +125,17 @@ var YTM = YTM || {};
       saveBtn.textContent = "Save";
 
       actions.append(cancelBtn, saveBtn);
-      box.append(header, input, actions);
+      box.append(body, actions);
       host.appendChild(box);
-      positionBox(box, anchorEl);
+      const stopTracking = trackPosition(box, anchorEl);
+      const outsideEvent = "PointerEvent" in window ? "pointerdown" : "mousedown";
 
       function finish(result, restoreFocus = true) {
         if (settled) return;
         settled = true;
         activeCleanup = null;
-        document.removeEventListener("mousedown", onDocMouseDown, true);
+        stopTracking();
+        document.removeEventListener(outsideEvent, onOutsidePress, true);
         document.removeEventListener("keydown", onDocKeyDown, true);
         box.remove();
         if (restoreFocus && anchorEl?.isConnected) anchorEl.focus({ preventScroll: true });
@@ -105,7 +144,7 @@ var YTM = YTM || {};
 
       activeCleanup = () => finish(null, false);
 
-      function onDocMouseDown(e) {
+      function onOutsidePress(e) {
         if (!box.contains(e.target) && (!anchorEl || !anchorEl.contains(e.target))) {
           finish(null, false);
         }
@@ -135,7 +174,7 @@ var YTM = YTM || {};
       saveBtn.addEventListener("click", () => finish(input.value.trim()));
       cancelBtn.addEventListener("click", () => finish(null));
 
-      document.addEventListener("mousedown", onDocMouseDown, true);
+      document.addEventListener(outsideEvent, onOutsidePress, true);
       document.addEventListener("keydown", onDocKeyDown, true);
 
       input.focus({ preventScroll: true });
@@ -151,7 +190,7 @@ var YTM = YTM || {};
     box.setAttribute("role", "status");
     box.textContent = message;
     host.appendChild(box);
-    positionBox(box, anchorEl);
+    const stopTracking = trackPosition(box, anchorEl);
 
     const timer = setTimeout(() => {
       if (activeCleanup) activeCleanup(null);
@@ -160,6 +199,7 @@ var YTM = YTM || {};
     activeCleanup = () => {
       clearTimeout(timer);
       activeCleanup = null;
+      stopTracking();
       box.remove();
     };
   }

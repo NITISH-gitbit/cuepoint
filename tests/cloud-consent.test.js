@@ -36,7 +36,7 @@ function permissionApi() {
 
 test("manifest requires no collection and the user-gesture request covers every optional cloud permission", async () => {
   assert.deepEqual(manifest.browser_specific_settings.gecko.data_collection_permissions.required, ["none"]);
-  assert.equal(manifest.browser_specific_settings.gecko_android, undefined);
+  assert.equal(manifest.browser_specific_settings.gecko_android.strict_min_version, "142.0");
   const { consent, calls } = permissionApi();
   const request = consent.request();
   assert.deepEqual(calls, [["request", declared]]);

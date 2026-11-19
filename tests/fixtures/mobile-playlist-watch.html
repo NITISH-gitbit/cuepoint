@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CuePoint mobile playlist regression</title>
+  <link rel="stylesheet" href="/src/content/content.css" />
+  <style>
+    ytm-watch, ytm-playlist-panel-renderer, ytm-slim-video-metadata-section-renderer,
+    ytm-slim-video-action-bar-renderer, ytm-slim-owner-renderer { display: block; }
+    video { max-width: 100%; height: 90px; }
+  </style>
+  <body>
+    <p><output id="result">Running mobile playlist checks…</output></p>
+    <ytm-watch data-video-id="videoA">
+      <div id="player-container-outer"><div id="player-container-id"><video class="html5-main-video"></video></div></div>
+      <ytm-playlist-panel-renderer>
+        <div id="actions"><button>Playlist action</button></div>
+        <video></video>
+      </ytm-playlist-panel-renderer>
+    </ytm-watch>
+    <script src="/src/shared/schema.js"></script>
+    <script>
+      history.replaceState(null, "", "/watch?v=videoA&list=playlistA");
+      const writes = [];
+      YTM.messages = {
+        ACTIONS: { GET_ACTIVE_LIBRARY: "library", ADD_MOMENT: "save" },
+        async sendAction(type, payload) {
+          if (type === "library") return { libraryKey: "local" };
+          writes.push(payload);
+          return {};
+        },
+      };
+    </script>
+    <script src="/src/content/mobile-dom.js"></script>
+    <script src="/src/content/dom.js"></script>
+    <script src="/src/content/popover.js"></script>
+    <script src="/src/content/content.js"></script>
+    <script>
+      const watch = document.querySelector("ytm-watch");
+      const player = watch.querySelector("#player-container-outer");
+      const video = player.querySelector("video");
+      const playlist = watch.querySelector("ytm-playlist-panel-renderer");
+      const button = () => document.querySelector("#ytm-save-btn");
+      const fallback = () => document.querySelector(".ytm-save-fallback--mobile");
+      function check(value, description) {
+        if (!value) throw new Error(description);
+      }
+      async function until(predicate, description) {
+        for (let i = 0; i < 60; i++) {
+          if (predicate()) return;
+          await new Promise((resolve) => setTimeout(resolve, 25));
+        }
+        throw new Error(description);
+      }
+      function makeMetadata(title) {
+        const metadata = document.createElement("ytm-slim-video-metadata-section-renderer");
+        const heading = document.createElement("h1");
+        heading.textContent = title;
+        const owner = document.createElement("ytm-slim-owner-renderer");
+        const link = document.createElement("a");
+        link.href = "https://m.youtube.com/@fixture";
+        link.textContent = "Fixture channel";
+        owner.append(link);
+        const actionBar = document.createElement("ytm-slim-video-action-bar-renderer");
+        const row = document.createElement("div");
+        row.className = "slim-video-action-bar-actions";
+        row.append(Object.assign(document.createElement("button"), { textContent: "Like video" }));
+        actionBar.append(row);
+        metadata.append(heading, owner, actionBar);
+        return { metadata, row };
+      }
+      async function run() {
+        check(fallback() && player.nextElementSibling === fallback() && fallback().contains(button()), "Fallback belongs right after the mobile player");
+        check(!playlist.contains(button()) && YTM.contentDom.getVideoEl() === video, "Ignore the playlist action row and preview player");
+        const initialButton = button();
+        const first = makeMetadata("First mobile video");
+        watch.append(first.metadata);
+        await until(() => first.row.contains(initialButton), "Move the fallback button into the video actions");
+        check(!fallback(), "Remove the unused fallback wrapper");
+
+        watch.before(player);
+        history.pushState(null, "", "/watch?v=videoB&list=playlistA");
+        window.dispatchEvent(new Event("yt-navigate-finish"));
+        check(!button(), "Do not offer to save a stale player after changing tracks");
+        watch.dataset.videoId = "videoB";
+        first.metadata.remove();
+        const next = makeMetadata("Second mobile video");
+        watch.append(next.metadata);
+        await until(() => next.row.contains(initialButton), "Restore the same button for the current track");
+        check(document.querySelectorAll("#ytm-save-btn").length === 1, "Do not duplicate the button");
+
+        const viewport = Object.assign(new EventTarget(), { width: 360, height: 640, offsetTop: 0, offsetLeft: 0 });
+        Object.defineProperty(window, "visualViewport", { configurable: true, value: viewport });
+        video.currentTime = 27.8;
+        initialButton.click();
+        await until(() => document.querySelector(".ytm-popover--compact"), "Open the compact touch dialog");
+        const save = document.querySelector(".ytm-popover__btn--primary");
+        viewport.height = 235;
+        viewport.offsetTop = 20;
+        viewport.dispatchEvent(new Event("resize"));
+        await until(() => save.getBoundingClientRect().bottom <= 255, "Save remains inside the shortened keyboard viewport");
+        check(save.getBoundingClientRect().height >= 44, "Save has a 44px touch target");
+        document.querySelector(".ytm-popover__input").value = "Mobile bookmark";
+        save.click();
+        await until(() => writes.length === 1, "Dispatch the bookmark");
+        const [bookmark] = writes;
+        check(bookmark.videoId === "videoB" && bookmark.timestamp === 27 && bookmark.note === "Mobile bookmark" &&
+          bookmark.title === "Second mobile video" && bookmark.channelName === "Fixture channel", "Saved the current mobile video's metadata and exact second");
+
+        history.pushState(null, "", "/shorts/example");
+        window.dispatchEvent(new Event("yt-navigate-finish"));
+        check(!button() && !fallback(), "Do not inject into Shorts");
+      }
+      function report(status) {
+        document.body.dataset.result = status;
+        document.querySelector("#result").textContent = status === "passed" ? "Mobile playlist checks passed." : status;
+      }
+      run().then(() => report("passed"), (error) => report(error.message));
+    </script>
+  </body>
+</html>

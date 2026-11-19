@@ -13,6 +13,7 @@
   "webExt": {
     "ignoreFiles": [
       "BRAND.md",
+      "FIREBASE_SETUP.md",
       "README.md",
       "design/**",
       "screenshots/**",
