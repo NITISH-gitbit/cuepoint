@@ -5,178 +5,483 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Firebase Cloud Sync Guide — CuePoint</title>
     <link rel="icon" type="image/svg+xml" href="../../icons/cuepoint.svg" />
-    <link rel="stylesheet" href="moments.css" />
-    <style>
-      .guide-wrap {
-        max-width: 760px;
-        margin: 0 auto;
-        padding: 36px 20px 80px;
-      }
-      .guide-head {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding-bottom: 18px;
-        border-bottom: 1px solid var(--line);
-        margin-bottom: 24px;
-      }
-      .guide-head h1 {
-        margin: 0;
-        font-size: 24px;
-        font-weight: 700;
-        letter-spacing: -0.02em;
-      }
-      .guide-intro {
-        margin: 0 0 24px;
-        color: var(--muted);
-        font-size: 14.5px;
-        line-height: 1.6;
-      }
-      .guide-steps {
-        display: flex;
-        flex-direction: column;
-        gap: 14px;
-      }
-      .guide-step {
-        background: var(--panel);
-        border: 1px solid var(--line);
-        border-radius: 12px;
-        padding: 18px 20px;
-      }
-      .guide-step__num {
-        display: inline-block;
-        font-family: var(--mono);
-        font-size: 11.5px;
-        font-weight: 600;
-        color: var(--accent);
-        background: var(--accent-soft);
-        padding: 2px 8px;
-        border-radius: 999px;
-        margin-bottom: 8px;
-      }
-      .guide-step h2 {
-        margin: 0 0 6px;
-        font-size: 16px;
-        font-weight: 600;
-        color: var(--text);
-      }
-      .guide-step p {
-        margin: 0;
-        color: var(--muted);
-        font-size: 13.5px;
-        line-height: 1.6;
-      }
-      .guide-step p + p {
-        margin-top: 0.75em;
-      }
-      .guide-step strong {
-        color: var(--text);
-      }
-      .guide-step a {
-        color: var(--accent-text);
-      }
-      .guide-code-wrap {
-        position: relative;
-        margin-top: 12px;
-      }
-      .guide-code {
-        margin: 0;
-        padding: 14px;
-        background: var(--bg);
-        border: 1px solid var(--line-strong);
-        border-radius: 9px;
-        color: var(--text);
-        font-family: var(--mono);
-        font-size: 12.5px;
-        line-height: 1.5;
-        overflow-x: auto;
-      }
-      .guide-copy {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-      }
-    </style>
+    <link rel="stylesheet" href="firebase-guide.css" />
   </head>
   <body>
-    <div class="guide-wrap">
-      <header class="guide-head">
-        <img class="logo" src="../../icons/cuepoint.svg" alt="" />
-        <h1>Firebase Cloud Sync Setup (BYOC)</h1>
-      </header>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <defs>
+        <symbol id="g-back" viewBox="0 0 24 24">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </symbol>
+        <symbol id="g-ext" viewBox="0 0 24 24">
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+          <polyline points="15 3 21 3 21 9"></polyline>
+          <line x1="10" y1="14" x2="21" y2="3"></line>
+        </symbol>
+        <symbol id="g-copy" viewBox="0 0 24 24">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </symbol>
+        <symbol id="g-check" viewBox="0 0 24 24">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </symbol>
+        <symbol id="g-chevron" viewBox="0 0 24 24">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </symbol>
+      </defs>
+    </svg>
 
-      <p class="guide-intro">
-        Connect your own free <strong>Firebase Spark Plan</strong> project so your saved YouTube
-        moments sync live across devices while staying 100% under your own Google account.
-      </p>
-
-      <div class="guide-steps">
-        <section class="guide-step">
-          <span class="guide-step__num">Step 1</span>
-          <h2>Create a free Firebase project</h2>
-          <p>
-            Go to the Firebase Console, click <strong>Add project</strong>, name it (e.g.,
-            <code>cuepoint</code>), and stay on the free <strong>Spark plan</strong> ($0,
-            no billing required).
-          </p>
-        </section>
-
-        <section class="guide-step">
-          <span class="guide-step__num">Step 2</span>
-          <h2>Enable Email/Password sign-in &amp; add your user</h2>
-          <p>
-            Open <strong>Build → Authentication → Sign-in method</strong>, enable
-            <strong>Email/Password</strong>, then go to the <strong>Users</strong> tab and click
-            <strong>Add user</strong> to create the email and password you will use in the
-            extension.
-          </p>
-        </section>
-
-        <section class="guide-step">
-          <span class="guide-step__num">Step 3</span>
-          <h2>Create a Realtime Database</h2>
-          <p>
-            Open <strong>Build → Realtime Database</strong>, click <strong>Create Database</strong>,
-            choose your region, and start in <strong>Locked mode</strong>.
-          </p>
-        </section>
-
-        <section class="guide-step">
-          <span class="guide-step__num">Step 4</span>
-          <h2>Publish these Security Rules</h2>
-          <p>
-            In <strong>Realtime Database → Rules</strong>, replace the rules with the snippet below
-            and click <strong>Publish</strong>. This locks all data strictly to your authenticated
-            account:
-          </p>
-          <div class="guide-code-wrap">
-            <pre id="rulesCode" class="guide-code"></pre>
-            <button id="copyRulesBtn" class="btn-sm primary guide-copy" type="button">
-              Copy Rules
-            </button>
-          </div>
-        </section>
-
-        <section class="guide-step">
-          <span class="guide-step__num">Step 5</span>
-          <h2>Copy your Firebase config &amp; Sign In</h2>
-          <p>
-            Go to <strong>Project Settings → General → Your apps</strong>, click the
-            <strong>Web (&lt;/&gt;)</strong> icon to register an app, copy the entire
-            <code>const firebaseConfig = { ... };</code> block, and paste it into
-            <strong>Cloud (BYOC)</strong> in CuePoint. If the snippet has no <code>databaseURL</code>,
-            copy the database URL from <strong>Realtime Database → Data</strong> and paste it into
-            the <strong>Realtime Database URL</strong> field that appears. Sign in with the Firebase
-            Authentication account from Step 2 and review Firefox’s permission prompt.
-          </p>
-          <p>
-            Signing in opens a separate cloud library. Your local bookmarks stay on this device
-            unless you choose <strong>Copy Local Moments</strong> in the cloud panel.
-            See the <a href="privacy.html">privacy policy</a> for what sync sends and how to stop it.
-          </p>
-        </section>
+    <header class="cue-topbar">
+      <div class="cue-topbar__inner">
+        <a class="cue-brand" href="moments.html">
+          <img class="logo" src="../../icons/cuepoint.svg" alt="" />
+          <span>CuePoint</span>
+          <span class="cue-brand__sep" aria-hidden="true">/</span>
+          <span class="cue-brand__sub">Firebase Cloud Sync Guide</span>
+        </a>
+        <div class="cue-topbar__actions">
+          <a class="cue-nav-link" href="moments.html">
+            <svg class="g-icon" aria-hidden="true"><use href="#g-back"></use></svg>
+            <span>Moments</span>
+          </a>
+          <a class="cue-nav-link cue-nav-link--privacy" href="privacy.html">Privacy Policy</a>
+          <a
+            class="cue-console-cta"
+            href="https://console.firebase.google.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span>Open Firebase Console</span>
+            <svg class="g-icon" aria-hidden="true"><use href="#g-ext"></use></svg>
+          </a>
+        </div>
       </div>
-    </div>
+    </header>
+
+    <nav class="cue-track-wrap" aria-label="Setup steps">
+      <ol class="cue-track">
+        <li class="cue-track__item">
+          <a class="cue-track__link is-active" href="#step-1" data-cue-step="1" aria-current="step">
+            <span class="cue-track__num" data-cue-num="1">01</span>
+            <span>Create project</span>
+          </a>
+        </li>
+        <li class="cue-track__item">
+          <a class="cue-track__link" href="#step-2" data-cue-step="2">
+            <span class="cue-track__num" data-cue-num="2">02</span>
+            <span>Sync account</span>
+          </a>
+        </li>
+        <li class="cue-track__item">
+          <a class="cue-track__link" href="#step-3" data-cue-step="3">
+            <span class="cue-track__num" data-cue-num="3">03</span>
+            <span>Realtime Database</span>
+          </a>
+        </li>
+        <li class="cue-track__item">
+          <a class="cue-track__link" href="#step-4" data-cue-step="4">
+            <span class="cue-track__num" data-cue-num="4">04</span>
+            <span>Security Rules</span>
+          </a>
+        </li>
+        <li class="cue-track__item">
+          <a class="cue-track__link" href="#step-5" data-cue-step="5">
+            <span class="cue-track__num" data-cue-num="5">05</span>
+            <span>Connect Firefox</span>
+          </a>
+        </li>
+      </ol>
+    </nav>
+
+    <main class="cue-sheet">
+      <section class="ledger-row cue-masthead" aria-labelledby="guideTitle">
+        <div class="cue-meta">
+          <strong>FREE SPARK PLAN</strong>
+          <span>~5 min setup</span>
+          <span>5 steps · 0 servers</span>
+          <span>Local stays separate</span>
+          <div id="progressRow" class="cue-meta__progress">
+            <span id="progressCount">0 / 5 done</span>
+            <button id="resetProgressBtn" class="cue-meta__reset" type="button" hidden>Reset</button>
+          </div>
+        </div>
+        <div>
+          <h1 id="guideTitle">Set up your own Firebase sync</h1>
+          <p class="cue-lead">
+            CuePoint keeps all bookmarks locally on your device by default with no account.
+            Follow these five steps if you want timestamps and notes to sync live across Firefox
+            desktop and Android using <strong>your own free Firebase project</strong>.
+          </p>
+        </div>
+      </section>
+
+      <!-- Step 1 -->
+      <section id="step-1" class="ledger-row cue-step" data-step="1">
+        <div class="cue-gutter">
+          <button
+            class="cue-step-toggle"
+            type="button"
+            data-check-step="1"
+            aria-pressed="false"
+            aria-label="Mark Step 1 (Project) complete"
+            title="Click to check off Step 1"
+          >
+            <span class="cue-detent" data-detent-num="1">01</span>
+            <span class="cue-gutter__label" data-gutter-label="1">Project</span>
+          </button>
+        </div>
+        <div class="cue-prose">
+          <h2>Create a dedicated Firebase project</h2>
+          <ol class="cue-steps-list">
+            <li>
+              <span class="cue-steps-list__num">1.</span>
+              <span>
+                Open the
+                <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer">Firebase Console</a>
+                and sign in with your Google account.
+              </span>
+            </li>
+            <li>
+              <span class="cue-steps-list__num">2.</span>
+              <span>
+                Select <strong>Add project</strong> (or <strong>Create a project</strong>) and give it a clear name such as
+                <code>cuepoint-personal</code>.
+              </span>
+            </li>
+            <li>
+              <span class="cue-steps-list__num">3.</span>
+              <span>
+                Skip optional extras like Google Analytics, confirm you stay on the free <strong>Spark</strong> plan
+                ($0, no billing card required), and select <strong>Create project</strong>.
+              </span>
+            </li>
+          </ol>
+          <p class="cue-note">
+            <strong>Keep this project selected</strong> through Step 5. Your web API key, database URL,
+            and sync user must all come from this same dedicated project so its database rules never affect another app.
+          </p>
+        </div>
+      </section>
+
+      <!-- Step 2 -->
+      <section id="step-2" class="ledger-row cue-step" data-step="2">
+        <div class="cue-gutter">
+          <button
+            class="cue-step-toggle"
+            type="button"
+            data-check-step="2"
+            aria-pressed="false"
+            aria-label="Mark Step 2 (Account) complete"
+            title="Click to check off Step 2"
+          >
+            <span class="cue-detent" data-detent-num="2">02</span>
+            <span class="cue-gutter__label" data-gutter-label="2">Account</span>
+          </button>
+        </div>
+        <div class="cue-prose">
+          <h2>Enable Email/Password and create your sync user</h2>
+          <ol class="cue-steps-list">
+            <li>
+              <span class="cue-steps-list__num">1.</span>
+              <span>
+                In the left sidebar, open <span class="console-path">Build → Authentication → Sign-in method</span>
+                (select <strong>Get started</strong> first if prompted).
+              </span>
+            </li>
+            <li>
+              <span class="cue-steps-list__num">2.</span>
+              <span>
+                Select <strong>Email/Password</strong>, turn on the first <strong>Email/Password</strong> switch,
+                and click <strong>Save</strong>. Leave <em>Email link (passwordless)</em> turned off.
+              </span>
+            </li>
+            <li>
+              <span class="cue-steps-list__num">3.</span>
+              <span>
+                Open the <span class="console-path">Users</span> tab, select <strong>Add user</strong>, and enter
+                an email address and a strong, unique password for CuePoint.
+              </span>
+            </li>
+          </ol>
+          <p class="cue-note cue-note--warn">
+            <strong>Do not reuse your Google account password.</strong> Save this Firebase password in your
+            password manager and sign in with the <strong>same Firebase user</strong> on every device that should share one library.
+          </p>
+        </div>
+      </section>
+
+      <!-- Step 3 -->
+      <section id="step-3" class="ledger-row cue-step" data-step="3">
+        <div class="cue-gutter">
+          <button
+            class="cue-step-toggle"
+            type="button"
+            data-check-step="3"
+            aria-pressed="false"
+            aria-label="Mark Step 3 (Database) complete"
+            title="Click to check off Step 3"
+          >
+            <span class="cue-detent" data-detent-num="3">03</span>
+            <span class="cue-gutter__label" data-gutter-label="3">Database</span>
+          </button>
+        </div>
+        <div class="cue-prose">
+          <h2>Create a Realtime Database in Locked mode</h2>
+          <ol class="cue-steps-list">
+            <li>
+              <span class="cue-steps-list__num">1.</span>
+              <span>
+                Open <span class="console-path">Build → Realtime Database</span> and select <strong>Create Database</strong>.
+              </span>
+            </li>
+            <li>
+              <span class="cue-steps-list__num">2.</span>
+              <span>
+                Choose a region near you, select <strong>Start in locked mode</strong>, and finish creating the database.
+              </span>
+            </li>
+            <li>
+              <span class="cue-steps-list__num">3.</span>
+              <span>
+                On <span class="console-path">Realtime Database → Data</span>, copy the root HTTPS database URL shown above the tree.
+              </span>
+            </li>
+          </ol>
+
+          <div class="cue-band" aria-label="Example Realtime Database URL formats">
+            <div class="cue-band__head">
+              <span class="cue-band__label">Expected root URL shape</span>
+            </div>
+            <div class="cue-urls">
+              <div class="cue-urls__row">
+                https://your-project-default-rtdb.firebaseio.com<span class="cue-urls__region">// US default</span>
+              </div>
+              <div class="cue-urls__row">
+                https://your-project-default-rtdb.europe-west1.firebasedatabase.app<span class="cue-urls__region">// Regional</span>
+              </div>
+            </div>
+          </div>
+
+          <p class="cue-note cue-note--warn">
+            <strong>Use Realtime Database, not Cloud Firestore.</strong> Do not choose Test mode or open public rules;
+            the locked database is expected to deny access until you publish Step 4’s rules.
+          </p>
+        </div>
+      </section>
+
+      <!-- Step 4 -->
+      <section id="step-4" class="ledger-row cue-step" data-step="4">
+        <div class="cue-gutter">
+          <button
+            class="cue-step-toggle"
+            type="button"
+            data-check-step="4"
+            aria-pressed="false"
+            aria-label="Mark Step 4 (Rules) complete"
+            title="Click to check off Step 4"
+          >
+            <span class="cue-detent" data-detent-num="4">04</span>
+            <span class="cue-gutter__label" data-gutter-label="4">Rules</span>
+          </button>
+        </div>
+        <div class="cue-prose">
+          <h2>Publish CuePoint’s Security Rules</h2>
+          <ol class="cue-steps-list">
+            <li>
+              <span class="cue-steps-list__num">1.</span>
+              <span>
+                Open <span class="console-path">Realtime Database → Rules</span> on the database you just created.
+              </span>
+            </li>
+            <li>
+              <span class="cue-steps-list__num">2.</span>
+              <span>
+                Replace the entire default Locked-mode JSON with the rules below, then select <strong>Publish</strong>.
+              </span>
+            </li>
+          </ol>
+
+          <div class="cue-band">
+            <div class="cue-band__head">
+              <span class="cue-band__label">Realtime Database → Rules (JSON)</span>
+              <button id="copyRulesBtn" class="cue-copy-btn" type="button">
+                <svg class="g-icon" aria-hidden="true"><use href="#g-copy"></use></svg>
+                <span id="copyRulesLabel">Copy rules</span>
+              </button>
+            </div>
+            <pre id="rulesCode" class="cue-code"></pre>
+          </div>
+
+          <dl class="cue-defs">
+            <div>
+              <dt>auth.uid == $uid</dt>
+              <dd>Only your signed-in Firebase user can read or write records under <code>/users/&lt;uid&gt;</code>.</dd>
+            </div>
+            <div>
+              <dt>.validate on cuepointV2/videos</dt>
+              <dd>Verifies matching <code>videoId</code> and numeric <code>revision</code> on every write.</dd>
+            </div>
+          </dl>
+        </div>
+      </section>
+
+      <!-- Step 5 -->
+      <section id="step-5" class="ledger-row cue-step" data-step="5">
+        <div class="cue-gutter">
+          <button
+            class="cue-step-toggle"
+            type="button"
+            data-check-step="5"
+            aria-pressed="false"
+            aria-label="Mark Step 5 (Connect) complete"
+            title="Click to check off Step 5"
+          >
+            <span class="cue-detent" data-detent-num="5">05</span>
+            <span class="cue-gutter__label" data-gutter-label="5">Connect</span>
+          </button>
+        </div>
+        <div class="cue-prose">
+          <h2>Register a Web app, copy config &amp; sign in</h2>
+          <ol class="cue-steps-list">
+            <li>
+              <span class="cue-steps-list__num">1.</span>
+              <span>
+                Open <span class="console-path">Project Settings → General → Your apps</span>, select the
+                <strong>Web (<code>&lt;/&gt;</code>)</strong> icon, enter a nickname like <code>CuePoint Firefox</code>,
+                leave Firebase Hosting unchecked, and click <strong>Register app</strong>.
+              </span>
+            </li>
+            <li>
+              <span class="cue-steps-list__num">2.</span>
+              <span>
+                Copy the <code>const firebaseConfig = { ... };</code> block (either npm or script-tag view works).
+              </span>
+            </li>
+            <li>
+              <span class="cue-steps-list__num">3.</span>
+              <span>
+                Return to <a href="moments.html">Moments</a>, open <strong>Local → Cloud (BYOC)</strong>, paste the
+                snippet, and enter your Step 2 email and password. If <code>databaseURL</code> is missing from the snippet,
+                paste your Step 3 root URL into the field that appears.
+              </span>
+            </li>
+            <li>
+              <span class="cue-steps-list__num">4.</span>
+              <span>
+                Select <strong>Sign In &amp; Connect</strong> and review Firefox’s optional data and network permissions.
+              </span>
+            </li>
+          </ol>
+
+          <div class="cue-verifier">
+            <div class="cue-verifier__head">
+              <label class="cue-verifier__title" for="snippetTester">Verify your config snippet before signing in (optional)</label>
+              <span class="cue-verifier__privacy">Checked locally · never sent or saved</span>
+            </div>
+            <textarea
+              id="snippetTester"
+              spellcheck="false"
+              placeholder='const firebaseConfig = {
+  apiKey: "...",
+  databaseURL: "https://your-project-default-rtdb.firebaseio.com",
+  ...
+};'
+            ></textarea>
+            <p id="snippetTesterResult" class="cue-verifier__result" role="status" hidden></p>
+          </div>
+
+          <p class="cue-note">
+            <strong>Local and cloud libraries stay separate.</strong> Signing in opens a clean cloud library without
+            uploading your device’s existing local bookmarks unless you choose <strong>Copy Local Moments</strong>.
+            To connect another Firefox device, repeat Step 5 with the same config, database URL, and Firebase user.
+            See the <a href="privacy.html">Privacy Policy</a> for what sync sends and how to stop it.
+          </p>
+        </div>
+      </section>
+
+      <!-- Troubleshooting -->
+      <section id="troubleshooting" class="ledger-row cue-faq-section" aria-labelledby="faqTitle">
+        <div class="cue-gutter">
+          <span class="cue-gutter__label">Help</span>
+        </div>
+        <div class="cue-prose">
+          <h2 id="faqTitle">Common questions &amp; troubleshooting</h2>
+          <div class="cue-faq-list">
+            <details class="cue-faq-item">
+              <summary>
+                <span>Config says apiKey detected, but databaseURL is missing</span>
+                <svg class="g-icon cue-faq-chevron" aria-hidden="true"><use href="#g-chevron"></use></svg>
+              </summary>
+              <div class="cue-faq-body">
+                Firebase sometimes omits <code>databaseURL</code> when the web app was registered before the Realtime Database
+                was created. Paste the snippet into CuePoint anyway, then copy your root URL from
+                <span class="console-path">Realtime Database → Data</span> into the <strong>Realtime Database URL</strong>
+                field that appears below it.
+              </div>
+            </details>
+            <details class="cue-faq-item">
+              <summary>
+                <span>HTTP 401 / 403 or “Permission denied” when connecting</span>
+                <svg class="g-icon cue-faq-chevron" aria-hidden="true"><use href="#g-chevron"></use></svg>
+              </summary>
+              <div class="cue-faq-body">
+                Confirm you clicked <strong>Publish</strong> in <span class="console-path">Realtime Database → Rules</span>
+                on the exact database matching your URL, and that your API key, database URL, and Authentication user all
+                belong to the same Firebase project. Never switch rules to public/test mode to fix a connection error.
+              </div>
+            </details>
+            <details class="cue-faq-item">
+              <summary>
+                <span>Invalid email or password / Email/Password sign-in not enabled</span>
+                <svg class="g-icon cue-faq-chevron" aria-hidden="true"><use href="#g-chevron"></use></svg>
+              </summary>
+              <div class="cue-faq-body">
+                Confirm the standard <strong>Email/Password</strong> switch (not just email link) is enabled under
+                <span class="console-path">Authentication → Sign-in method</span>, and that you are entering the Firebase user
+                created in Step 2—not your Google account password.
+              </div>
+            </details>
+            <details class="cue-faq-item">
+              <summary>
+                <span>Two devices are connected, but show different bookmarks</span>
+                <svg class="g-icon cue-faq-chevron" aria-hidden="true"><use href="#g-chevron"></use></svg>
+              </summary>
+              <div class="cue-faq-body">
+                Check that both devices are in <strong>Cloud (BYOC)</strong> mode, connected to the same
+                <strong>Database</strong> URL, and signed in with the same <strong>Account</strong> email. Bookmarks saved
+                while in <strong>Local</strong> mode stay local until you use <strong>Copy Local Moments</strong>.
+              </div>
+            </details>
+            <details class="cue-faq-item">
+              <summary>
+                <span>The database looks empty in Firebase Console after signing in</span>
+                <svg class="g-icon cue-faq-chevron" aria-hidden="true"><use href="#g-chevron"></use></svg>
+              </summary>
+              <div class="cue-faq-body">
+                Normal for a new account. The <code>users/&lt;uid&gt;/cuepointV2/videos</code> tree is created automatically
+                the first time you save a moment in Cloud mode or run <strong>Copy Local Moments</strong>.
+              </div>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <footer class="ledger-row cue-footer">
+        <div class="cue-gutter">
+          <span class="cue-gutter__label">CuePoint</span>
+        </div>
+        <div class="cue-footer__links">
+          <a href="moments.html">Return to Moments</a>
+          <a href="privacy.html">Privacy Policy</a>
+          <a href="https://firebase.google.com/docs/database/security" target="_blank" rel="noopener noreferrer">Firebase Rules Docs</a>
+          <a href="https://firebase.google.com/pricing" target="_blank" rel="noopener noreferrer">Spark Plan Limits</a>
+        </div>
+      </footer>
+    </main>
+
+    <script src="../storage/firebase-auth.js"></script>
+    <script src="section-track.js"></script>
     <script src="firebase-guide.js"></script>
   </body>
 </html>
