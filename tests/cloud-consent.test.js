@@ -61,6 +61,56 @@ test("missing, partial, rejected, or unsupported grants never authorize Cloud Sy
   await assert.rejects(consent.request(), /data and network permissions are required/);
 });
 
+test("Chrome origins-only manifest requests and checks optional_host_permissions without data_collection", async () => {
+  const chromeManifest = {
+    manifest_version: 3,
+    optional_host_permissions: declared.origins,
+  };
+  let grantedOrigins = [...declared.origins];
+  let acceptRequest = true;
+  const calls = [];
+  const chromePlatform = {
+    consentUnsupportedError: "Chrome host permissions are unavailable.",
+    consentDeniedError: "Chrome network permissions are required for Cloud Sync.",
+  };
+  const consent = createCloudConsent(
+    {
+      runtime: { getManifest: () => chromeManifest },
+      permissions: {
+        async getAll() {
+          throw new Error("getAll should not be called when data_collection is absent");
+        },
+        async contains(request) {
+          calls.push(["contains", request]);
+          assert.equal(Object.hasOwn(request, "data_collection"), false);
+          return request.origins.every((origin) => grantedOrigins.includes(origin));
+        },
+        async request(request) {
+          calls.push(["request", request]);
+          assert.equal(Object.hasOwn(request, "data_collection"), false);
+          return acceptRequest;
+        },
+      },
+    },
+    chromePlatform,
+  );
+
+  await consent.request();
+  assert.deepEqual(calls, [
+    ["request", { origins: declared.origins }],
+    ["contains", { origins: declared.origins }],
+  ]);
+  assert.equal(await consent.isGranted(), true);
+  assert.equal(consent.affectsCloud({ origins: ["https://test.firebaseio.com/*"] }), true);
+  assert.equal(consent.affectsCloud({ permissions: ["storage"] }), false);
+
+  grantedOrigins = declared.origins.slice(1);
+  assert.equal(await consent.isGranted(), false);
+
+  acceptRequest = false;
+  await assert.rejects(consent.request(), /Chrome network permissions are required/);
+});
+
 const model = createSyncModel(schema);
 const databaseURL = "https://cuepoint-consent-test.firebaseio.com";
 const credentials = { apiKey: "test-key", databaseURL, email: "person@example.test", password: "test-password" };

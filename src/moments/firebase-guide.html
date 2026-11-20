@@ -96,7 +96,7 @@
         <li class="cue-track__item">
           <a class="cue-track__link" href="#step-5" data-cue-step="5">
             <span class="cue-track__num" data-cue-num="5">05</span>
-            <span>Connect Firefox</span>
+            <span data-platform-text="guideStep5Track">Connect Firefox</span>
           </a>
         </li>
       </ol>
@@ -118,8 +118,9 @@
           <h1 id="guideTitle">Set up your own Firebase sync</h1>
           <p class="cue-lead">
             CuePoint keeps all bookmarks locally on your device by default with no account.
-            Follow these five steps if you want timestamps and notes to sync live across Firefox
-            desktop and Android using <strong>your own free Firebase project</strong>.
+            Follow these five steps if you want timestamps and notes to sync live across
+            <span data-platform-text="guideDevices">Firefox desktop and Android</span> using
+            <strong>your own free Firebase project</strong>.
           </p>
         </div>
       </section>
@@ -356,7 +357,8 @@
               <span class="cue-steps-list__num">1.</span>
               <span>
                 Open <span class="console-path">Project Settings → General → Your apps</span>, select the
-                <strong>Web (<code>&lt;/&gt;</code>)</strong> icon, enter a nickname like <code>CuePoint Firefox</code>,
+                <strong>Web (<code>&lt;/&gt;</code>)</strong> icon, enter a nickname like
+                <code data-platform-text="guideAppNickname">CuePoint Firefox</code>,
                 leave Firebase Hosting unchecked, and click <strong>Register app</strong>.
               </span>
             </li>
@@ -377,7 +379,8 @@
             <li>
               <span class="cue-steps-list__num">4.</span>
               <span>
-                Select <strong>Sign In &amp; Connect</strong> and review Firefox’s optional data and network permissions.
+                Select <strong>Sign In &amp; Connect</strong> and review
+                <span data-platform-text="guidePermissionsPrompt">Firefox’s optional data and network permissions</span>.
               </span>
             </li>
           </ol>
@@ -402,7 +405,7 @@
           <p class="cue-note">
             <strong>Local and cloud libraries stay separate.</strong> Signing in opens a clean cloud library without
             uploading your device’s existing local bookmarks unless you choose <strong>Copy Local Moments</strong>.
-            To connect another Firefox device, repeat Step 5 with the same config, database URL, and Firebase user.
+            To connect another <span data-platform-text="browserName">Firefox</span> device, repeat Step 5 with the same config, database URL, and Firebase user.
             See the <a href="privacy.html">Privacy Policy</a> for what sync sends and how to stop it.
           </p>
         </div>

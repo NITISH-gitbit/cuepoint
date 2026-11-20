@@ -166,6 +166,7 @@ test("Moments clamps timestamp popover on narrow viewports and surfaces delete c
   let pillNode = null;
   let deleteBtn = null;
   let getMomentsCalls = 0;
+  let recoverCalls = 0;
 
   const moment = {
     id: "m1",
@@ -224,6 +225,10 @@ test("Moments clamps timestamp popover on narrow viewports and surfaces delete c
         if (type === ACTIONS.DELETE_MOMENT) {
           throw new Error("This moment changed. Review it before deleting.");
         }
+        if (type === ACTIONS.CLOUD_RECOVER) {
+          recoverCalls++;
+          return {};
+        }
         return {};
       },
     },
@@ -232,17 +237,36 @@ test("Moments clamps timestamp popover on narrow viewports and surfaces delete c
   elements.get("list").querySelector = (sel) => (sel.includes("m1") ? pillNode : null);
   elements.get("list").querySelectorAll = () => (pillNode ? [pillNode] : []);
 
+  const docListeners = new Map();
+  const winListeners = new Map();
+  const doc = {
+    body: makeEl("body"),
+    visibilityState: "visible",
+    getElementById: (id) => elements.get(id) || null,
+    createDocumentFragment: () => makeEl("frag"),
+    addEventListener(evt, fn) {
+      if (!docListeners.has(evt)) docListeners.set(evt, []);
+      docListeners.get(evt).push(fn);
+    },
+  };
+
   runInNewContext(momentsSource, {
     YTM,
     CSS: { escape: (s) => s },
     console: { error() {} },
-    document: {
-      body: makeEl("body"),
-      getElementById: (id) => elements.get(id) || null,
-      createDocumentFragment: () => makeEl("frag"),
-      addEventListener() {},
+    document: doc,
+    window: {
+      innerWidth: 300,
+      innerHeight: 600,
+      scrollX: 0,
+      scrollY: 0,
+      confirm: () => true,
+      scrollTo() {},
+      addEventListener(evt, fn) {
+        if (!winListeners.has(evt)) winListeners.set(evt, []);
+        winListeners.get(evt).push(fn);
+      },
     },
-    window: { innerWidth: 300, innerHeight: 600, scrollX: 0, scrollY: 0, confirm: () => true, scrollTo() {} },
     setTimeout: () => 1,
     clearTimeout() {},
   });
@@ -250,6 +274,11 @@ test("Moments clamps timestamp popover on narrow viewports and surfaces delete c
   onLibraryChange("firebase:url|uid", true);
   await new Promise(setImmediate);
   assert.equal(getMomentsCalls, 1);
+
+  // Returning to visible Moments tab triggers event-driven cloud recovery (throttled within 5s).
+  for (const fn of docListeners.get("visibilitychange") || []) fn();
+  for (const fn of winListeners.get("online") || []) fn();
+  assert.equal(recoverCalls, 1);
 
   // Open popover on narrow 300px viewport -> left must clamp to 12px (never negative).
   elements.get("list").dispatch("click", { target: pillNode });

@@ -3,7 +3,7 @@ var YTM = YTM || {};
 (function () {
   "use strict";
 
-  const { messages, firebaseAuth, momentsRender, schema, cloudConsent } = YTM;
+  const { messages, firebaseAuth, momentsRender, schema, cloudConsent, platform } = YTM;
   const { el } = momentsRender;
   const { ACTIONS } = messages;
   const ext = messages.getExtApi();
@@ -44,9 +44,10 @@ var YTM = YTM || {};
     const conflictsEl = document.getElementById("cloudConflicts");
     const conflictList = document.getElementById("cloudConflictList");
     const cloudErrEl = document.getElementById("cloudErr");
-    const consent = cloudConsent.createCloudConsent(ext);
+    const consent = cloudConsent.createCloudConsent(ext, platform);
     const disclosure = el("p", { className: "cloud-local-card__desc", hidden: true,
-      textContent: "Cloud Sync sends saved YouTube links, timestamps, video details, and notes to your Firebase project. Google Firebase Authentication receives your email, password at sign-in, and session credentials. You can revoke data permissions in Firefox’s Add-ons Manager under Permissions and Data. " });
+      textContent: platform?.cloudDisclosure
+        || "Cloud Sync sends saved YouTube links, timestamps, video details, and notes to your Firebase project. Google Firebase Authentication receives your email, password at sign-in, and session credentials. You can revoke data permissions in Firefox’s Add-ons Manager under Permissions and Data. " });
     disclosure.append(el("a", { href: "privacy.html", target: "_blank", rel: "noopener", textContent: "Privacy Policy" }));
     localPane.before(disclosure);
 

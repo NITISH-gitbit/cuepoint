@@ -3,9 +3,11 @@ var YTM = YTM || {};
 (function () {
   "use strict";
 
-  const { schema, messages, momentsState, momentsRender } = YTM;
+  const { schema, messages, momentsState, momentsRender, platform } = YTM;
   const { ACTIONS } = messages;
   const ext = messages.getExtApi();
+  const browserName = platform?.browserName || "Firefox";
+  const extensionsMenuHint = platform?.extensionsMenuHint || "Firefox’s Extensions menu or toolbar";
 
   const listEl = document.getElementById("list");
   const pagerEl = document.getElementById("pager");
@@ -211,11 +213,11 @@ var YTM = YTM || {};
       showEmpty(
         "No moments yet",
         momentsRender.el("p", {}, [
-          "Open a YouTube video in Firefox and choose ",
+          `Open a YouTube video in ${browserName} and choose `,
           momentsRender.el("code", { textContent: "Save moment" }),
           " below the player. Add a note if you like, then choose ",
           momentsRender.el("code", { textContent: "Save" }),
-          ". Open CuePoint from Firefox’s Extensions menu or toolbar to find it again.",
+          `. Open CuePoint from ${extensionsMenuHint} to find it again.`,
         ]),
       );
       return;
@@ -638,6 +640,17 @@ var YTM = YTM || {};
     const revision = changes.momentsRevision;
     if (area === "local" && revision && revision.oldValue !== revision.newValue) refreshMoments();
   });
+
+  let lastRecoverAt = 0;
+  function triggerCloudRecover() {
+    if (!canSaveConflicts || document.visibilityState === "hidden") return;
+    const now = Date.now();
+    if (now - lastRecoverAt < 5000) return;
+    lastRecoverAt = now;
+    messages.sendAction(ACTIONS.CLOUD_RECOVER).catch(() => {});
+  }
+  document.addEventListener("visibilitychange", triggerCloudRecover);
+  window.addEventListener("online", triggerCloudRecover);
 
   render();
   loadPageSize().catch((err) => console.error("Failed to load page size", err));

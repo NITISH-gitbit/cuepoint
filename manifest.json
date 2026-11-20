@@ -34,7 +34,8 @@
   },
   "permissions": [
     "storage",
-    "alarms"
+    "alarms",
+    "unlimitedStorage"
   ],
   "optional_host_permissions": [
     "https://identitytoolkit.googleapis.com/*",
@@ -49,6 +50,7 @@
   },
   "background": {
     "scripts": [
+      "src/shared/platform.js",
       "src/shared/schema.js",
       "src/shared/messages.js",
       "src/shared/cloud-consent.js",

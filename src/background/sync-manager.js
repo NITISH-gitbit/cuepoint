@@ -4,12 +4,15 @@ var YTM = YTM || {};
   "use strict";
 
   const { createWriteQueue } = typeof module !== "undefined" && module.exports ? require("./queue") : YTM.queue;
+  const defaultPlatform = typeof module !== "undefined" && module.exports ? require("../shared/platform") : YTM.platform;
   const stopped = () => new DOMException("Sync session retired.", "AbortError");
 
-  const consentRequired = () => new Error("Firefox data and network permissions are required for Cloud Sync. Select Cloud to resume after granting them.");
-
   function createSyncManager({ repo, model, auth, createTransport, onStatusChange, checkConsent = () => false,
-    fetchFn = globalThis.fetch, EventSourceCtor, schedule = setTimeout, cancel = clearTimeout }) {
+    platform = defaultPlatform, fetchFn = globalThis.fetch, EventSourceCtor, schedule = setTimeout, cancel = clearTimeout }) {
+    const consentRequired = () => new Error(
+      platform?.consentRequiredError
+      || "Firefox data and network permissions are required for Cloud Sync. Select Cloud to resume after granting them.",
+    );
     let current = null;
     let authentication = null;
     let starting;

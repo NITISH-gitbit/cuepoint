@@ -6,17 +6,30 @@
   "description": "Save exact YouTube video timestamps with notes, search your moments, and optionally sync live across devices via your own Firebase.",
   "scripts": {
     "test": "node --test tests/*.test.js",
+    "test:chrome": "node scripts/smoke-chrome.js",
     "lint": "web-ext lint --warnings-as-errors",
+    "lint:firefox": "node scripts/build.js --target firefox && web-ext lint --warnings-as-errors --source-dir dist/firefox",
     "build": "web-ext build --overwrite-dest",
+    "build:icons": "node scripts/build-icons.js",
+    "build:firefox": "node scripts/build.js --target firefox",
+    "build:chrome": "node scripts/build.js --target chrome",
+    "build:all": "node scripts/build.js --target all",
+    "build:zips": "node scripts/build.js --target all --zip",
     "dev": "web-ext run"
   },
   "webExt": {
     "ignoreFiles": [
       "BRAND.md",
+      "DESIGN.md",
       "FIREBASE_SETUP.md",
+      "PRODUCT.md",
       "README.md",
       "design/**",
+      "dist/**",
+      "openwiki/**",
       "screenshots/**",
+      "scripts/**",
+      "targets/**",
       "release-instructions.md",
       "tests/**"
     ]

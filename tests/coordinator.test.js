@@ -4,7 +4,7 @@ const schema = require("../src/shared/schema.js");
 const { ACTIONS } = require("../src/shared/messages.js");
 const { createMemoryRepo } = require("./memory-repo");
 const { createSyncModel } = require("../src/background/sync-model.js");
-const { createCoordinator } = require("../src/background/background.js");
+const { createCoordinator, createMessageListener } = require("../src/background/background.js");
 
 function makeCoordinator() {
   const model = createSyncModel(schema);
@@ -88,4 +88,50 @@ test("importMoments deduplicates by id/(videoId,timestamp), enforces max 3/video
     limitSkipped: 1,
     total: 4,
   });
+});
+
+test("createMessageListener uses callback sendResponse + literal true return for Chrome and Firefox MV3", async () => {
+  const coord = makeCoordinator();
+  let readyCalls = 0;
+  const sync = {
+    async ready() { readyCalls++; },
+    async setMode(mode) { return { mode }; },
+  };
+  const managerActions = new Set([ACTIONS.CLOUD_SET_MODE]);
+  const listener = createMessageListener({ coordinator: coord, sync, managerActions });
+
+  // Non-ytm messages return false synchronously without calling sendResponse.
+  let called = false;
+  assert.equal(listener({ type: "other:ping" }, {}, () => { called = true; }), false);
+  assert.equal(called, false);
+
+  // Library messages wait for sync.ready(), return literal true (never a Promise), and call sendResponse.
+  const libReply = await new Promise((resolve) => {
+    const ret = listener({ type: ACTIONS.GET_MOMENTS, payload: {} }, {}, resolve);
+    assert.strictEqual(ret, true);
+  });
+  assert.deepEqual(libReply, { ok: true, data: [] });
+  assert.equal(readyCalls, 1);
+
+  // Unknown ytm:* action returns structured error rather than undefined.
+  const unknownReply = await new Promise((resolve) => {
+    const ret = listener({ type: "ytm:nonexistent" }, {}, resolve);
+    assert.strictEqual(ret, true);
+  });
+  assert.equal(unknownReply.ok, false);
+  assert.match(unknownReply.error, /Unknown action/);
+
+  // Manager actions bypass sync.ready() and serialize thrown errors into { ok: false, error }.
+  const failCoord = {
+    handleMessage() {
+      throw new Error("sync failure");
+    },
+  };
+  const failListener = createMessageListener({ coordinator: failCoord, sync, managerActions });
+  const errReply = await new Promise((resolve) => {
+    const ret = failListener({ type: ACTIONS.CLOUD_SET_MODE, payload: { mode: "cloud" } }, {}, resolve);
+    assert.strictEqual(ret, true);
+  });
+  assert.deepEqual(errReply, { ok: false, error: "sync failure" });
+  assert.equal(readyCalls, 2);
 });

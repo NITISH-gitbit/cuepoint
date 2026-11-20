@@ -16,6 +16,7 @@ var YTM = YTM || {};
     CLOUD_SIGN_OUT: "ytm:cloud_sign_out",
     CLOUD_SET_MODE: "ytm:cloud_set_mode",
     CLOUD_SYNC_NOW: "ytm:cloud_sync_now",
+    CLOUD_RECOVER: "ytm:cloud_recover",
     CLOUD_IMPORT_LOCAL: "ytm:cloud_import_local",
     RESOLVE_SYNC_CONFLICT: "ytm:resolve_sync_conflict",
   });

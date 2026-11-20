@@ -1,0 +1,11 @@
+{
+  "guideStep5Track": "Connect Chrome",
+  "guideDevices": "Chrome devices",
+  "guideAppNickname": "CuePoint Chrome",
+  "guidePermissionsPrompt": "Chrome’s optional site permissions",
+  "browserName": "Chrome",
+  "browserProfile": "Chrome profile",
+  "browserPermissions": "Chrome permissions",
+  "extensionsSettings": "Chrome’s Extensions settings",
+  "storeListing": "CuePoint Chrome Web Store listing"
+}

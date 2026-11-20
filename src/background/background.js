@@ -156,6 +156,10 @@ var YTM = YTM || {};
       [actions.CLOUD_SIGN_OUT]: () => sync.signOut(),
       [actions.CLOUD_SET_MODE]: (p) => sync.setMode(p?.mode),
       [actions.CLOUD_SYNC_NOW]: () => sync.syncNow(),
+      [actions.CLOUD_RECOVER]: async () => {
+        await sync.recover();
+        return sync.getStatus();
+      },
       [actions.CLOUD_IMPORT_LOCAL]: importLocal,
       [actions.RESOLVE_SYNC_CONFLICT]: resolveConflict,
     };
@@ -168,14 +172,33 @@ var YTM = YTM || {};
     return { getMoments, addMoment, updateMoment, deleteMoment, importMoments, handleMessage };
   }
 
+  function createMessageListener({ coordinator, sync, managerActions }) {
+    // Non-async listener using sendResponse + literal `return true` for full
+    // compatibility across Chrome MV3 (<148 through latest) and Firefox MV3.
+    return function onMessage(message, _sender, sendResponse) {
+      if (typeof message?.type !== "string" || !message.type.startsWith("ytm:")) return false;
+      const dispatch = () => coordinator.handleMessage(message);
+      // Capture cloud user intents before waiting so revocation can cancel them.
+      // Library commands wait until the local/cloud library switch is durable.
+      const run = managerActions.has(message.type)
+        ? Promise.resolve().then(dispatch)
+        : Promise.resolve().then(() => sync.ready()).then(dispatch);
+      run
+        .then((response) => (response === undefined ? { ok: false, error: `Unknown action: ${message.type}` } : response))
+        .catch((error) => ({ ok: false, error: error?.message || "Unknown error." }))
+        .then((reply) => sendResponse(reply));
+      return true;
+    };
+  }
+
   const ext = YTM.messages?.getExtApi();
   if (ext) {
     const model = YTM.syncModel.createSyncModel(YTM.schema);
     const repo = YTM.storage.createLocalRepo(indexedDB, model.initialState);
-    const consent = YTM.cloudConsent.createCloudConsent(ext);
+    const consent = YTM.cloudConsent.createCloudConsent(ext, YTM.platform);
     const sync = YTM.syncManager.createSyncManager({
       repo, model, auth: YTM.firebaseAuth, createTransport: YTM.firebaseRtdb.createFirebaseTransport,
-      checkConsent: consent.isGranted,
+      checkConsent: consent.isGranted, platform: YTM.platform,
       onStatusChange: ({ conflicts, ...status }, momentsRevision) => ext.storage.local.set({
         syncStatus: { ...status, conflictCount: conflicts.length }, momentsRevision,
       }),
@@ -189,23 +212,21 @@ var YTM = YTM || {};
     const { CLOUD_SIGN_IN, CLOUD_SIGN_UP, CLOUD_SIGN_OUT, CLOUD_SET_MODE, CLOUD_SYNC_NOW } = YTM.messages.ACTIONS;
     const managerActions = new Set([CLOUD_SIGN_IN, CLOUD_SIGN_UP, CLOUD_SIGN_OUT, CLOUD_SET_MODE, CLOUD_SYNC_NOW]);
     ext.action.onClicked.addListener(() => ext.tabs.create({ url: ext.runtime.getURL("src/moments/moments.html") }));
-    ext.runtime.onMessage.addListener((message) => {
-      if (typeof message?.type !== "string" || !message.type.startsWith("ytm:")) return false;
-      const dispatch = () => coordinator.handleMessage(message);
-      // Capture cloud user intents before waiting so revocation can cancel them.
-      // Library commands wait until the local/cloud library switch is durable.
-      const result = managerActions.has(message.type) ? dispatch() : sync.ready().then(dispatch);
-      return result.catch((error) => ({ ok: false, error: error.message || "Unknown error." }));
-    });
+    ext.runtime.onMessage.addListener(createMessageListener({ coordinator, sync, managerActions }));
+
+    function ensureSyncAlarm() {
+      ext.alarms.get("cuepoint-sync").then((alarm) => {
+        if (!alarm) ext.alarms.create("cuepoint-sync", { periodInMinutes: 1 });
+      }).catch(() => {});
+    }
 
     ext.alarms.onAlarm.addListener((alarm) => {
       if (alarm.name === "cuepoint-sync") sync.recover().catch(() => {});
     });
-    ext.alarms.get("cuepoint-sync").then((alarm) => {
-      if (!alarm) ext.alarms.create("cuepoint-sync", { periodInMinutes: 1 });
-    }).catch(() => {});
+    ext.runtime.onInstalled?.addListener(ensureSyncAlarm);
+    ensureSyncAlarm();
     sync.start().catch(() => {});
   }
 
-  if (typeof module !== "undefined" && module.exports) module.exports = { createCoordinator };
+  if (typeof module !== "undefined" && module.exports) module.exports = { createCoordinator, createMessageListener };
 })();
