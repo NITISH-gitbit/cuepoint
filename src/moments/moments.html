@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CuePoint</title>
     <link rel="icon" type="image/svg+xml" href="../../icons/cuepoint.svg" />
+    <script src="theme.js"></script>
     <link rel="stylesheet" href="moments.css" />
   </head>
   <body>
@@ -139,10 +140,20 @@
               </svg>
             </button>
           </div>
-          <button id="cloudBtn" class="btn-outline cloud-btn" type="button" aria-label="Storage and sync: Local" aria-controls="cloudPopover" aria-expanded="false" aria-haspopup="dialog">
-            <span id="cloudDot" class="cloud-dot cloud-dot--local" aria-hidden="true"></span>
-            <span id="cloudBtnLabel">Local</span>
-          </button>
+          <div class="head__status">
+            <button
+              id="themeToggle"
+              class="btn-outline theme-btn"
+              type="button"
+              data-theme-toggle
+              aria-label="Switch to light mode"
+              title="Switch to light mode"
+            ></button>
+            <button id="cloudBtn" class="btn-outline cloud-btn" type="button" aria-label="Storage and sync: Local" aria-controls="cloudPopover" aria-expanded="false" aria-haspopup="dialog">
+              <span id="cloudDot" class="cloud-dot cloud-dot--local" aria-hidden="true"></span>
+              <span id="cloudBtnLabel">Local</span>
+            </button>
+          </div>
           <input
             id="importFile"
             type="file"

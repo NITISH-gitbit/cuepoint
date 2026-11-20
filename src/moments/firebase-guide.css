@@ -8,6 +8,7 @@
 }
 
 :root {
+  color-scheme: dark;
   --mono:
     ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
   --sans:
@@ -24,11 +25,43 @@
   --guide-accent: #ff4e45;
   --guide-accent-text: #ff7b74;
   --guide-accent-ink: #18181d;
+  --guide-accent-hover-bg: rgba(255, 78, 69, 0.08);
+  --guide-selection: rgba(255, 78, 69, 0.28);
   --guide-info: #5b9dff;
   --guide-info-hover: #87b8ff;
   --guide-ok: #4ade80;
+  --guide-ok-bg: rgba(74, 222, 128, 0.14);
+  --guide-ok-border: rgba(74, 222, 128, 0.58);
+  --tok-key: #7eb8ff;
+  --tok-str: #86efac;
+  --tok-punc: #8e8e9a;
   --guide-bar-h: 54px;
   --guide-track-h: 46px;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --guide-bg: #f7f7f9;
+  --guide-band: #eeeef2;
+  --guide-rule: #e2e2e8;
+  --guide-rule-soft: #e7e7ee;
+  --guide-rule-strong: #c8c8d4;
+  --guide-ink: #121217;
+  --guide-body: #2e2e38;
+  --guide-muted: #525260;
+  --guide-accent: #ff4e45;
+  --guide-accent-text: #c92a22;
+  --guide-accent-ink: #18181d;
+  --guide-accent-hover-bg: rgba(201, 42, 34, 0.08);
+  --guide-selection: rgba(255, 78, 69, 0.2);
+  --guide-info: #1d64d8;
+  --guide-info-hover: #154eb0;
+  --guide-ok: #146c35;
+  --guide-ok-bg: rgba(20, 108, 53, 0.1);
+  --guide-ok-border: rgba(20, 108, 53, 0.42);
+  --tok-key: #1d4ed8;
+  --tok-str: #146c35;
+  --tok-punc: #525260;
 }
 
 html {
@@ -48,7 +81,7 @@ body {
 }
 
 ::selection {
-  background: rgba(255, 78, 69, 0.28);
+  background: var(--guide-selection);
   color: var(--guide-ink);
 }
 
@@ -162,6 +195,35 @@ textarea:focus-visible {
 }
 .cue-console-cta:hover {
   filter: brightness(1.07);
+}
+
+.cue-theme-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 7px;
+  border: 1px solid var(--guide-rule-strong);
+  background: var(--guide-band);
+  color: var(--guide-body);
+  cursor: pointer;
+  transition: border-color 0.16s ease, color 0.16s ease;
+}
+.cue-theme-btn:hover {
+  border-color: var(--guide-accent-text);
+  color: var(--guide-accent-text);
+}
+.theme-toggle__icon {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 /* ---------- Pinned 5-Segment Cue Track ---------- */
@@ -366,7 +428,7 @@ textarea:focus-visible {
 }
 .cue-step-toggle:hover .cue-detent {
   border-color: var(--guide-accent-text);
-  background: rgba(255, 78, 69, 0.08);
+  background: var(--guide-accent-hover-bg);
 }
 .cue-step-toggle:hover .cue-gutter__label {
   color: var(--guide-ink);
@@ -390,8 +452,8 @@ textarea:focus-visible {
   transition: border-color 0.16s ease, background-color 0.16s ease, color 0.16s ease;
 }
 .cue-step.is-done .cue-detent {
-  border-color: rgba(74, 222, 128, 0.6);
-  background: rgba(74, 222, 128, 0.14);
+  border-color: var(--guide-ok-border);
+  background: var(--guide-ok-bg);
   color: var(--guide-ok);
 }
 
@@ -543,8 +605,8 @@ textarea:focus-visible {
   color: var(--guide-accent-text);
 }
 .cue-copy-btn.is-copied {
-  border-color: rgba(74, 222, 128, 0.55);
-  background: rgba(74, 222, 128, 0.14);
+  border-color: var(--guide-ok-border);
+  background: var(--guide-ok-bg);
   color: var(--guide-ok);
 }
 
@@ -584,9 +646,9 @@ textarea:focus-visible {
   tab-size: 2;
 }
 
-.tok-key { color: #7eb8ff; }
-.tok-str { color: #86efac; }
-.tok-punc { color: #8e8e9a; }
+.tok-key { color: var(--tok-key); }
+.tok-str { color: var(--tok-str); }
+.tok-punc { color: var(--tok-punc); }
 
 .cue-defs {
   margin: 16px 0 0;

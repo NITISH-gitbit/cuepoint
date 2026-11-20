@@ -8,6 +8,7 @@
 }
 
 :root {
+  color-scheme: dark;
   --mono:
     ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
   --sans:
@@ -23,11 +24,30 @@
   --priv-muted: #9898a6;
   --priv-accent: #ff4e45;
   --priv-accent-text: #ff7b74;
+  --priv-selection: rgba(255, 78, 69, 0.28);
   --priv-info: #5b9dff;
   --priv-info-hover: #87b8ff;
   --priv-ok: #4ade80;
   --priv-bar-h: 54px;
   --priv-track-h: 46px;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --priv-bg: #f7f7f9;
+  --priv-band: #eeeef2;
+  --priv-rule: #e2e2e8;
+  --priv-rule-soft: #e7e7ee;
+  --priv-rule-strong: #c8c8d4;
+  --priv-ink: #121217;
+  --priv-body: #2e2e38;
+  --priv-muted: #525260;
+  --priv-accent: #ff4e45;
+  --priv-accent-text: #c92a22;
+  --priv-selection: rgba(255, 78, 69, 0.2);
+  --priv-info: #1d64d8;
+  --priv-info-hover: #154eb0;
+  --priv-ok: #146c35;
 }
 
 html {
@@ -47,7 +67,7 @@ body {
 }
 
 ::selection {
-  background: rgba(255, 78, 69, 0.28);
+  background: var(--priv-selection);
   color: var(--priv-ink);
 }
 
@@ -161,6 +181,35 @@ button:focus-visible {
 .priv-nav-btn:hover {
   border-color: var(--priv-accent-text);
   color: var(--priv-accent-text);
+}
+
+.priv-theme-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 7px;
+  border: 1px solid var(--priv-rule-strong);
+  background: var(--priv-band);
+  color: var(--priv-body);
+  cursor: pointer;
+  transition: border-color 0.16s ease, color 0.16s ease;
+}
+.priv-theme-btn:hover {
+  border-color: var(--priv-accent-text);
+  color: var(--priv-accent-text);
+}
+.theme-toggle__icon {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 /* ---------- Pinned 4-Segment Section Track ---------- */
