@@ -103,9 +103,9 @@ var YTM = YTM || {};
 
   function positionPopover(pill) {
     const rect = pill.getBoundingClientRect();
-    const popWidth = 300;
+    const popWidth = Math.min(300, Math.max(0, window.innerWidth - 24));
     const left = Math.min(
-      Math.max(12, rect.left + window.scrollX),
+      Math.max(window.scrollX + 12, rect.left + window.scrollX),
       window.scrollX + window.innerWidth - popWidth - 12,
     );
     const spaceBelow = window.innerHeight - rect.bottom;
@@ -428,18 +428,18 @@ var YTM = YTM || {};
       const label = m.note || m.title;
       if (!window.confirm(`Delete ${label ? `“${label}”` : "this moment"}?`)) return;
       try {
-        const result = await messages.sendAction(ACTIONS.DELETE_MOMENT, {
+        await messages.sendAction(ACTIONS.DELETE_MOMENT, {
           id, baseVersion: m.version, libraryKey: targetLibrary,
         });
         if (epoch !== libraryEpoch) return;
-        if (result?.pendingConflict) {
-          showStatus("This moment changed and wasn't deleted. Check Cloud Sync to review.", "err");
-        }
         if (activeMomentId === id && !editingId) closePopover();
         await refreshMoments();
       } catch (err) {
         console.error("Delete failed", err);
-        if (epoch === libraryEpoch) showStatus("Couldn't delete this moment. Please try again.", "err");
+        if (epoch === libraryEpoch) {
+          showStatus(err.message || "Couldn't delete this moment. Please try again.", "err");
+          await refreshMoments();
+        }
       }
     }
   });
@@ -581,18 +581,23 @@ var YTM = YTM || {};
   const mobileImportBtn = document.getElementById("mobileImportBtn");
   const mobileExportBtn = document.getElementById("mobileExportBtn");
 
+  function closeMoreMenu() {
+    if (moreMenu) moreMenu.hidden = true;
+    if (moreBtn) moreBtn.setAttribute("aria-expanded", "false");
+  }
+
   if (mobileRandomBtn) {
     mobileRandomBtn.addEventListener("click", () => randomEl.click());
   }
   if (mobileImportBtn) {
     mobileImportBtn.addEventListener("click", () => {
-      if (moreMenu) moreMenu.hidden = true;
+      closeMoreMenu();
       importEl.click();
     });
   }
   if (mobileExportBtn) {
     mobileExportBtn.addEventListener("click", () => {
-      if (moreMenu) moreMenu.hidden = true;
+      closeMoreMenu();
       exportEl.click();
     });
   }

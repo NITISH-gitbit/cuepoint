@@ -56,6 +56,7 @@ var YTM = YTM || {};
     let parsedConfig = { apiKey: "", databaseURL: "", projectId: "", valid: false };
     let statusSequence = 0;
     let conflictSignature = null;
+    let showingSetup = false;
     let busy = false;
 
     function setError(msg) {
@@ -109,6 +110,10 @@ var YTM = YTM || {};
       currentStatus = status || { mode: "local", state: "local" };
       const { mode, libraryKey, pendingCount = 0 } = currentStatus;
       const isCloud = mode === "cloud";
+      const hasCredentials = !!currentStatus.hasCredentials;
+      if (hasCredentials) showingSetup = false;
+      const isCloudConnected = isCloud && hasCredentials;
+      const showCloudTab = isCloudConnected || (showingSetup && !hasCredentials);
       const state = currentStatus.state || "local";
       const conflictCount = currentStatus.conflictCount ?? currentStatus.conflicts?.length ?? 0;
       const cachedConflicts = previous.libraryKey === libraryKey && previous.conflicts?.length === conflictCount
@@ -118,16 +123,15 @@ var YTM = YTM || {};
       if (previous.libraryKey !== libraryKey || previous.mode !== mode || state === "error") {
         syncMsgEl.hidden = true;
       }
-      onLibraryChange(typeof libraryKey === "string" && libraryKey ? libraryKey : null,
-        isCloud && currentStatus.hasCredentials);
+      onLibraryChange(typeof libraryKey === "string" && libraryKey ? libraryKey : null, isCloudConnected);
 
-      cloudDot.className = "cloud-dot cloud-dot--" + (isCloud ? state : "local");
-      let label = isCloud ? "Cloud" : "Local";
-      if (isCloud && state === "error") label = "Sync Error";
+      cloudDot.className = "cloud-dot cloud-dot--" + (isCloudConnected ? state : "local");
+      let label = isCloudConnected ? "Cloud" : "Local";
+      if (isCloudConnected && state === "error") label = "Sync Error";
       else if (conflictCount) label = `${conflictCount} conflict${conflictCount === 1 ? "" : "s"}`;
       else if (pendingCount > 0) label = `${pendingCount} pending`;
-      else if (isCloud && state === "live") label = "Live";
-      else if (isCloud && state === "connecting") label = "Syncing…";
+      else if (isCloudConnected && state === "live") label = "Live";
+      else if (isCloudConnected && state === "connecting") label = "Syncing…";
       cloudLabel.textContent = label;
       cloudBtn.setAttribute("aria-label", `Storage and sync: ${label}`);
       pendingEl.hidden = !(pendingCount > 0);
@@ -137,20 +141,20 @@ var YTM = YTM || {};
       renderConflicts(libraryKey, conflicts);
       updateButtons();
 
-      modeLocalBtn.classList.toggle("active", !isCloud);
-      modeCloudBtn.classList.toggle("active", isCloud);
-      modeLocalBtn.setAttribute("aria-pressed", String(!isCloud));
-      modeCloudBtn.setAttribute("aria-pressed", String(isCloud));
-      disclosure.hidden = !isCloud && !currentStatus.hasCredentials;
+      modeLocalBtn.classList.toggle("active", !showCloudTab);
+      modeCloudBtn.classList.toggle("active", showCloudTab);
+      modeLocalBtn.setAttribute("aria-pressed", String(!showCloudTab));
+      modeCloudBtn.setAttribute("aria-pressed", String(showCloudTab));
+      disclosure.hidden = !showCloudTab && !hasCredentials;
 
-      if (!isCloud) {
+      if (!showCloudTab) {
         localPane.hidden = false;
         setupPane.hidden = true;
         connectedPane.hidden = true;
         if (localResumeHint) {
-          localResumeHint.hidden = !currentStatus.hasCredentials;
+          localResumeHint.hidden = !hasCredentials;
         }
-      } else if (currentStatus.hasCredentials) {
+      } else if (hasCredentials) {
         localPane.hidden = true;
         setupPane.hidden = true;
         connectedPane.hidden = false;
@@ -174,7 +178,11 @@ var YTM = YTM || {};
         connectedPane.hidden = true;
       }
 
-      setError(isCloud && state === "error" ? currentStatus.error : "");
+      if (isCloudConnected) {
+        setError(state === "error" ? currentStatus.error : "");
+      } else if (!showingSetup) {
+        setError("");
+      }
     }
 
     function renderConflicts(libraryKey, conflicts) {
@@ -329,12 +337,26 @@ var YTM = YTM || {};
     dbUrlEl.addEventListener("input", updateParsedPreview);
 
     modeLocalBtn.addEventListener("click", () => {
+      if (busy || !currentStatus.libraryKey) return;
+      showingSetup = false;
+      if (!currentStatus.hasCredentials) {
+        setError("");
+        applyStatus(currentStatus);
+        return;
+      }
       runOperation(() => requestStatus(ACTIONS.CLOUD_SET_MODE, { mode: "local" }));
     });
 
     modeCloudBtn.addEventListener("click", () => {
+      if (busy || !currentStatus.libraryKey) return;
+      if (!currentStatus.hasCredentials) {
+        showingSetup = true;
+        setError("");
+        applyStatus(currentStatus);
+        return;
+      }
       runOperation(async () => {
-        if (currentStatus.hasCredentials) await consent.request();
+        await consent.request();
         await requestStatus(ACTIONS.CLOUD_SET_MODE, { mode: "cloud" });
       });
     });
@@ -384,6 +406,7 @@ var YTM = YTM || {};
     });
 
     function signOut() {
+      showingSetup = false;
       runOperation(() => requestStatus(ACTIONS.CLOUD_SIGN_OUT));
     }
     signOutBtn.addEventListener("click", signOut);

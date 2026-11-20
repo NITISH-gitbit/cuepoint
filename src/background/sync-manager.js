@@ -12,7 +12,6 @@ var YTM = YTM || {};
     fetchFn = globalThis.fetch, EventSourceCtor, schedule = setTimeout, cancel = clearTimeout }) {
     let current = null;
     let authentication = null;
-    let cloudSelected = false;
     let starting;
     let pausing = null;
     let consentRevision = 0;
@@ -60,7 +59,7 @@ var YTM = YTM || {};
       const replica = model.library(state, key);
       const session = current?.key === key ? current : null;
       return {
-        mode: state.connection?.enabled || cloudSelected ? "cloud" : "local",
+        mode: state.connection?.enabled ? "cloud" : "local",
         state: session?.phase || "local",
         hasCredentials: !!state.connection,
         libraryKey: key,
@@ -108,7 +107,6 @@ var YTM = YTM || {};
       ++consentRevision;
       cancelAuthentication(consentRequired());
       retire();
-      cloudSelected = false;
       // Keep the account's local replica and pending edits. Turning Firefox
       // permissions back on alone must not activate the persisted connection.
       const pause = transitions.enqueue(() => repo.commit((state) => {
@@ -311,6 +309,7 @@ var YTM = YTM || {};
       await ensureStream(session);
       let pushedCount = 0;
       let pulledCount = 0;
+      let synced = false;
       do {
         assertOwner(session);
         session.requested = false;
@@ -320,6 +319,7 @@ var YTM = YTM || {};
         const operation = replica.outbox[0];
         if (operation) {
           const outcome = await applyNext(session, operation);
+          synced = true;
           if (outcome === "write") pushedCount++;
           session.requested = true;
           continue;
@@ -329,6 +329,7 @@ var YTM = YTM || {};
           try {
             const keys = await session.transport.listVideos();
             assertOwner(session);
+            synced = true;
             for (const id of [...keys, ...Object.keys(replica.videos)]) {
               if (model.safeKey(id)) session.invalidated.add(id);
             }
@@ -342,6 +343,7 @@ var YTM = YTM || {};
           session.invalidated.delete(id);
           try {
             if (await pull(session, id)) pulledCount++;
+            synced = true;
           } catch (error) {
             session.invalidated.add(id);
             throw error;
@@ -349,13 +351,15 @@ var YTM = YTM || {};
         }
       } while (session.requested || session.full || session.invalidated.size);
       assertOwner(session);
-      session.lastSyncedAt = Date.now();
+      const nextPhase = session.online ? "live" : "connecting";
+      const statusChanged = session.timer === null && (session.phase !== nextPhase || session.error !== "");
+      if (synced) session.lastSyncedAt = Date.now();
       if (session.timer === null) {
-        session.phase = session.online ? "live" : "connecting";
+        session.phase = nextPhase;
         session.error = "";
         if (session.online) session.failures = 0;
       }
-      changed();
+      if (synced || statusChanged) changed();
       return { pushedCount, pulledCount };
     }
 
@@ -398,12 +402,24 @@ var YTM = YTM || {};
         await requireConsent(attempt.signal);
         const request = isSignUp ? auth.signUp : auth.signIn;
         const fetch = timedFetch(attempt.signal);
-        const token = await request({ apiKey: key, email: address, password }, fetch);
+        let token;
+        try {
+          token = await request({ apiKey: key, email: address, password }, fetch);
+        } catch (error) {
+          attempt.signal.throwIfAborted();
+          throw error;
+        }
         attempt.signal.throwIfAborted();
         if (!token.uid || !token.idToken || !token.refreshToken) throw new Error("Firebase returned an incomplete session.");
         const connection = { ...token, apiKey: key, databaseURL: url, enabled: true };
         const probe = createTransport({ ...connection, getToken: async () => token.idToken, fetchFn: fetch, signal: attempt.signal });
-        await probe.listVideos();
+        try {
+          await probe.listVideos();
+        } catch (error) {
+          attempt.signal.throwIfAborted();
+          throw error;
+        }
+        attempt.signal.throwIfAborted();
         return await transition(async () => {
           await requireConsent(attempt.signal);
           retire();
@@ -414,7 +430,6 @@ var YTM = YTM || {};
           });
           attempt.signal.throwIfAborted();
           activate(connection);
-          cloudSelected = false;
           changed();
           return getStatus();
         });
@@ -436,7 +451,6 @@ var YTM = YTM || {};
         assertCurrent();
         if (enabled && before.connection) await requireConsent(null, revision);
         assertCurrent();
-        cloudSelected = enabled && !before.connection;
         if (before.connection && before.connection.enabled !== enabled) {
           retire();
           const connection = await repo.commit((state) => {
@@ -458,7 +472,6 @@ var YTM = YTM || {};
       return transition(async () => {
         retire();
         await repo.commit((state) => { state.connection = null; state.version++; });
-        cloudSelected = false;
         changed();
         return getStatus();
       });
@@ -484,8 +497,16 @@ var YTM = YTM || {};
       const session = current;
       if (!session) return;
       await requireConsent(session.controller.signal);
-      if (owns(session) && !session.terminal && session.timer === null) {
-        if (!session.online) session.full = true;
+      if (!owns(session) || session.terminal || session.timer !== null) return;
+      if (!session.online || !session.stream) {
+        session.full = true;
+        wake(session);
+        return;
+      }
+      const state = await repo.read();
+      if (!owns(session)) return;
+      const hasPending = model.library(state, session.key).outbox.length > 0;
+      if (hasPending || session.full || session.invalidated.size > 0) {
         wake(session);
       }
     }

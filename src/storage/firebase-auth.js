@@ -19,9 +19,15 @@ var YTM = YTM || {};
     INVALID_REFRESH_TOKEN: "Session expired. Please sign in again.",
   };
 
-  function friendlyError(code, fallback) {
-    if (!code) return fallback || "Firebase authentication failed.";
+  function normalizeErrorCode(code, fallback) {
+    if (!code) return fallback;
     const clean = String(code).split(":")[0].trim();
+    return clean || fallback;
+  }
+
+  function friendlyError(code, fallback) {
+    const clean = normalizeErrorCode(code, "");
+    if (!clean) return fallback || "Firebase authentication failed.";
     return ERROR_MESSAGES[clean] || fallback || clean;
   }
 
@@ -85,9 +91,9 @@ var YTM = YTM || {};
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const code = data && data.error && data.error.message;
-      const err = new Error(friendlyError(code, `Auth request failed (${res.status})`));
-      err.code = code || "AUTH_ERROR";
+      const rawCode = data && data.error && data.error.message;
+      const err = new Error(friendlyError(rawCode, `Auth request failed (${res.status})`));
+      err.code = normalizeErrorCode(rawCode, "AUTH_ERROR");
       throw err;
     }
     return data;
@@ -137,9 +143,9 @@ var YTM = YTM || {};
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const code = data && data.error && data.error.message;
-      const err = new Error(friendlyError(code, `Token refresh failed (${res.status})`));
-      err.code = code || "TOKEN_REFRESH_ERROR";
+      const rawCode = data && data.error && data.error.message;
+      const err = new Error(friendlyError(rawCode, `Token refresh failed (${res.status})`));
+      err.code = normalizeErrorCode(rawCode, "TOKEN_REFRESH_ERROR");
       throw err;
     }
     const expiresInSec = Number(data.expires_in) || 3600;

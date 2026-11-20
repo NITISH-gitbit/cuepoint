@@ -4,6 +4,8 @@ var YTM = YTM || {};
   "use strict";
 
   const BTN_ID = "ytm-save-btn";
+  const DEFAULT_BTN_LABEL = "Save moment";
+  const FLASH_CLASSES = ["ytm-save-btn--done", "ytm-save-btn--err"];
   const LOG = "[CuePoint]";
   const POLL_INTERVAL_MS = 500;
   const MAX_POLL_ATTEMPTS = 40;
@@ -12,21 +14,40 @@ var YTM = YTM || {};
   const { ACTIONS } = messages;
 
   let pollTimer = null;
+  let flashTimer = null;
   let rafScheduled = false;
   let saving = false;
   let saveButton = null;
   let fallbackWrap = null;
+  let lastRoute = currentRoute();
+
+  function currentRoute() {
+    return location.pathname + location.search;
+  }
 
   function makeButton() {
+    const NS = "http://www.w3.org/2000/svg";
     const btn = document.createElement("button");
     btn.id = BTN_ID;
     btn.type = "button";
     btn.className = "ytm-save-btn";
     btn.setAttribute("aria-label", "Save this moment");
-    btn.innerHTML =
-      '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">' +
-      '<path fill="#FF4E45" d="M8 5v14l11-7z"/></svg>' +
-      '<span class="ytm-save-btn__label">Save moment</span>';
+
+    const svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("width", "20");
+    svg.setAttribute("height", "20");
+    svg.setAttribute("aria-hidden", "true");
+    const path = document.createElementNS(NS, "path");
+    path.setAttribute("fill", "#FF4E45");
+    path.setAttribute("d", "M8 5v14l11-7z");
+    svg.appendChild(path);
+
+    const label = document.createElement("span");
+    label.className = "ytm-save-btn__label";
+    label.textContent = DEFAULT_BTN_LABEL;
+
+    btn.append(svg, label);
     btn.addEventListener("click", handleSaveClick);
     return btn;
   }
@@ -77,23 +98,47 @@ var YTM = YTM || {};
     }, POLL_INTERVAL_MS);
   }
 
+  function clearFlash(btn = saveButton) {
+    if (flashTimer !== null) {
+      clearTimeout(flashTimer);
+      flashTimer = null;
+    }
+    if (!btn) return;
+    btn.classList.remove(...FLASH_CLASSES);
+    const label = btn.querySelector(".ytm-save-btn__label");
+    if (label) label.textContent = DEFAULT_BTN_LABEL;
+  }
+
+  function handleNavigation() {
+    lastRoute = currentRoute();
+    popover.closePopover();
+    clearFlash();
+    startPolling();
+  }
+
   function scheduleEnsure() {
-    if (rafScheduled || !dom.onWatchPage()) return;
+    const routeChanged = currentRoute() !== lastRoute;
+    const hasInjected = !!(saveButton?.isConnected || fallbackWrap?.isConnected);
+    if (rafScheduled || (!routeChanged && !dom.onWatchPage() && !hasInjected)) return;
     rafScheduled = true;
     requestAnimationFrame(() => {
       rafScheduled = false;
+      if (currentRoute() !== lastRoute) {
+        handleNavigation();
+        return;
+      }
       ensureButton();
     });
   }
 
   function flashButton(btn, text, cssClass) {
+    clearFlash(btn);
     const label = btn.querySelector(".ytm-save-btn__label");
-    const original = label ? label.textContent : null;
     btn.classList.add(cssClass);
     if (label) label.textContent = text;
-    setTimeout(() => {
-      btn.classList.remove(cssClass);
-      if (label && original !== null) label.textContent = original;
+    flashTimer = setTimeout(() => {
+      flashTimer = null;
+      clearFlash(btn);
     }, 1800);
   }
 
@@ -177,10 +222,9 @@ var YTM = YTM || {};
   });
 
   window.addEventListener("resize", scheduleEnsure);
-  window.addEventListener("yt-navigate-finish", () => {
-    popover.closePopover();
-    startPolling();
-  });
+  for (const evt of ["yt-navigate-finish", "state-navigateend", "popstate"]) {
+    window.addEventListener(evt, handleNavigation);
+  }
 
   startPolling();
 })();

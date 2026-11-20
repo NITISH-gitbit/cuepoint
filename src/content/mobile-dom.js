@@ -56,18 +56,37 @@ var YTM = YTM || {};
       return { fallback: anchor, after: true, mobile: true };
     }
 
+    const TITLE_SELECTOR =
+      "ytm-slim-video-metadata-section-renderer h1, ytm-slim-video-metadata-renderer h1, ytm-watch-metadata h1, .slim-video-information-title";
+    const CHANNEL_LINK_SELECTOR = [
+      "ytm-slim-owner-renderer a[href*='/@']",
+      "ytm-slim-owner-renderer a[href*='/channel/']",
+      "ytm-slim-owner-renderer a[href*='/c/']",
+      "ytm-slim-owner-renderer a[href*='/user/']",
+      "ytm-video-owner-renderer a[href*='/@']",
+      "ytm-video-owner-renderer a[href*='/channel/']",
+      "ytm-video-owner-renderer a[href*='/c/']",
+      "ytm-video-owner-renderer a[href*='/user/']",
+    ].join(", ");
+
     function getTitle() {
-      const title = getWatch()?.querySelector(
-        "ytm-slim-video-metadata-section-renderer h1, ytm-slim-video-metadata-renderer h1, ytm-watch-metadata h1, .slim-video-information-title",
-      );
-      return title?.textContent.trim() || titleFromDocument();
+      const watch = getWatch();
+      if (watch) {
+        const heading = Array.from(watch.querySelectorAll(TITLE_SELECTOR))
+          .find((node) => isVideoControl(node) && node.textContent.trim());
+        if (heading) return heading.textContent.trim();
+      }
+      return titleFromDocument();
     }
 
     function getChannel() {
-      const link = getWatch()?.querySelector(
-        "ytm-slim-owner-renderer a[href*='/@'], ytm-slim-owner-renderer a[href*='/channel/'], ytm-video-owner-renderer a[href*='/@'], ytm-video-owner-renderer a[href*='/channel/']",
-      );
-      return link?.textContent.trim() ? { name: link.textContent.trim(), url: link.href } : { name: "", url: "" };
+      const watch = getWatch();
+      if (watch) {
+        const link = Array.from(watch.querySelectorAll(CHANNEL_LINK_SELECTOR))
+          .find((node) => isVideoControl(node) && node.textContent.trim());
+        if (link) return { name: link.textContent.trim(), url: link.href || "" };
+      }
+      return { name: "", url: "" };
     }
 
     return { findButtonPlacement, getVideoEl: () => getPlayer()?.video || null, getTitle, getChannel };

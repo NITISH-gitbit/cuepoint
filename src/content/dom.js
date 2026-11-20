@@ -33,20 +33,23 @@ var YTM = YTM || {};
     return document.title.replace(/\s*-\s*YouTube\s*$/, "").trim();
   }
 
+  function getVisibleMetadata() {
+    return Array.from(document.querySelectorAll("ytd-watch-metadata")).filter(isVideoControl);
+  }
+
   function getTitle() {
-    const el = document.querySelector(
-      "h1.ytd-watch-metadata yt-formatted-string, h1.ytd-watch-metadata",
-    );
-    if (el && el.textContent.trim()) return el.textContent.trim();
+    for (const metadata of getVisibleMetadata()) {
+      const el = metadata.querySelector("h1 yt-formatted-string, h1");
+      if (el && isVideoControl(el) && el.textContent.trim()) return el.textContent.trim();
+    }
     return titleFromDocument();
   }
 
   function getChannel() {
-    const a = document.querySelector(
-      "ytd-watch-metadata ytd-channel-name a, ytd-watch-metadata #channel-name a",
-    );
-    if (a && a.textContent.trim()) {
-      return { name: a.textContent.trim(), url: a.href || "" };
+    for (const metadata of getVisibleMetadata()) {
+      const links = metadata.querySelectorAll("ytd-channel-name a, #channel-name a");
+      const a = Array.from(links).find((link) => isVideoControl(link) && link.textContent.trim());
+      if (a) return { name: a.textContent.trim(), url: a.href || "" };
     }
     return { name: "", url: "" };
   }
@@ -63,8 +66,7 @@ var YTM = YTM || {};
 
   function findButtonPlacement() {
     let fallback = null;
-    for (const metadata of document.querySelectorAll("ytd-watch-metadata")) {
-      if (!isVideoControl(metadata)) continue;
+    for (const metadata of getVisibleMetadata()) {
       for (const selector of ROW_SELECTORS) {
         for (const row of metadata.querySelectorAll(selector)) {
           if (isVideoControl(row)) return { row, fallback: null };

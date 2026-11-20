@@ -4,36 +4,63 @@ var YTM = YTM || {};
   "use strict";
 
   function createLocalRepo(indexedDB, initialState) {
-    let opening;
+    let opening = null;
+    let currentDb = null;
+
+    function clear(db) {
+      if (!db || currentDb === db) {
+        currentDb = null;
+        opening = null;
+      }
+    }
 
     function open() {
       if (!opening) {
         opening = new Promise((resolve, reject) => {
           const request = indexedDB.open("cuepoint-replica", 1);
-          request.onupgradeneeded = () => request.result.createObjectStore("replica");
+          request.onupgradeneeded = () => {
+            if (!request.result.objectStoreNames.contains("replica")) {
+              request.result.createObjectStore("replica");
+            }
+          };
           request.onsuccess = () => {
             const db = request.result;
+            currentDb = db;
             db.onversionchange = () => {
+              clear(db);
               db.close();
-              opening = null;
             };
+            db.onclose = () => clear(db);
             resolve(db);
           };
           request.onerror = () => reject(request.error);
         }).catch((error) => {
           opening = null;
+          currentDb = null;
           throw error;
         });
       }
       return opening;
     }
 
+    function openTransaction(db, mutator) {
+      return mutator
+        ? db.transaction("replica", "readwrite", { durability: "strict" })
+        : db.transaction("replica", "readonly");
+    }
+
     async function transact(mutator) {
-      const db = await open();
+      let db = await open();
+      let tx;
+      try {
+        tx = openTransaction(db, mutator);
+      } catch (error) {
+        if (error?.name !== "InvalidStateError") throw error;
+        clear(db);
+        db = await open();
+        tx = openTransaction(db, mutator);
+      }
       return new Promise((resolve, reject) => {
-        const tx = mutator
-          ? db.transaction("replica", "readwrite", { durability: "strict" })
-          : db.transaction("replica", "readonly");
         const store = tx.objectStore("replica");
         const request = store.get("state");
         let result;

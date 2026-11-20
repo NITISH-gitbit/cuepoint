@@ -206,6 +206,30 @@ test("each database request checks consent, so a late grant loss cannot turn a r
   assert.equal((await client.repo.read()).libraries[model.accountKey(account)].outbox.length, 1);
 });
 
+test("revocation during sign-in database probe reports the consent error rather than transport abort", async () => {
+  const probeStarted = deferred(), probeResponse = deferred();
+  const repo = createMemoryRepo(model.initialState());
+  const { sync, streams } = simulator({
+    repo,
+    respond(url, { signal }) {
+      if (url.includes("identitytoolkit.googleapis.com")) {
+        return Response.json({ localId: account.uid, idToken: account.idToken, refreshToken: account.refreshToken });
+      }
+      probeStarted.resolve(signal);
+      return probeResponse.promise;
+    },
+  });
+  const signIn = sync.connectWithCredentials(credentials);
+  const rejected = assert.rejects(signIn, /permissions are required/);
+  const signal = await probeStarted.promise;
+  await sync.pauseForConsent();
+  assert.equal(signal.aborted, true);
+  probeResponse.resolve(new Response("null"));
+  await rejected;
+  assert.equal((await repo.read()).connection, null);
+  assert.deepEqual(streams, []);
+});
+
 test("recovery detects missing consent even without onRemoved and invalidates scheduled retries", async () => {
   const { sync, calls, streams, timers, setGranted } = simulator({ respond() { throw new Error("offline"); } });
   await sync.start();

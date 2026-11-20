@@ -299,3 +299,31 @@ test("Firebase setup still parses pasted JavaScript config snippets", () => {
   `), { apiKey: "test", databaseURL: url, projectId: "example", valid: true });
   assert.equal(firebaseAuth.normalizeDatabaseUrl("https://example.invalid"), "");
 });
+
+test("suffixed Firebase Auth error codes are normalized and treated as terminal", async () => {
+  const remote = server();
+  const a = client(remote, "alice", {
+    connection: { ...credentials("alice"), expiresAt: 0 },
+    auth: {
+      normalizeDatabaseUrl: firebaseAuth.normalizeDatabaseUrl,
+      refreshIdToken: (cfg) => firebaseAuth.refreshIdToken(cfg, async () =>
+        new Response(JSON.stringify({ error: { message: "TOKEN_EXPIRED : User token has been revoked" } }), { status: 400 }),
+      ),
+    },
+  });
+  await a.sync.start();
+  await until(a.status, (s) => s.state === "error");
+  assert.equal(a.timers.size, 0);
+  assert.match((await a.status()).error, /Sign in again/i);
+});
+
+test("recover on an idle live session verifies consent without fabricating a new lastSyncedAt", async () => {
+  const remote = server();
+  const a = client(remote);
+  await a.work();
+  const initialSyncedAt = (await a.status()).lastSyncedAt;
+  assert.ok(initialSyncedAt > 0);
+  await new Promise((resolve) => setTimeout(resolve, 15));
+  await a.sync.recover();
+  assert.equal((await a.status()).lastSyncedAt, initialSyncedAt);
+});

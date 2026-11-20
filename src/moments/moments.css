@@ -298,6 +298,7 @@ body {
   overflow: hidden;
   background: var(--bg);
   border: 1px solid var(--line);
+  text-decoration: none;
 }
 .thumb--fallback {
   display: flex;
