@@ -1,6 +1,6 @@
 {
   "name": "cuepoint",
-  "version": "1.1.3",
+  "version": "1.1.4",
   "private": true,
   "license": "MIT",
   "description": "Save exact YouTube video timestamps with notes, search your moments, and optionally sync live across devices via your own Firebase.",
@@ -9,12 +9,10 @@
     "test:chrome": "node scripts/smoke-chrome.js",
     "lint": "web-ext lint --warnings-as-errors",
     "lint:firefox": "node scripts/build.js --target firefox && web-ext lint --warnings-as-errors --source-dir dist/firefox",
-    "build": "web-ext build --overwrite-dest",
+    "build": "node scripts/build.js --target all --zip",
     "build:icons": "node scripts/build-icons.js",
     "build:firefox": "node scripts/build.js --target firefox",
     "build:chrome": "node scripts/build.js --target chrome",
-    "build:all": "node scripts/build.js --target all",
-    "build:zips": "node scripts/build.js --target all --zip",
     "dev": "web-ext run"
   },
   "webExt": {

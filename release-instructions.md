@@ -2,7 +2,7 @@
 
 ## Shared pre-flight checks
 
-- Run `npm test`, `npm run lint`, `npm run lint:firefox`, `npm run build:zips`, and `npm run test:chrome`.
+- Run `npm test`, `npm run lint`, `npm run lint:firefox`, `npm run build`, and `npm run test:chrome`.
 - Keep [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES](THIRD_PARTY_NOTICES) inside every built package. Review redistribution terms before adding any new third-party material.
 - Inspect both `dist/cuepoint-firefox-<version>.zip` and `dist/cuepoint-chrome-<version>.zip` before uploading.
 

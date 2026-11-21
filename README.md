@@ -23,11 +23,11 @@ See the [privacy policy](src/moments/privacy.html) for what is stored, what opti
 
 - `npm install` installs the Firefox `web-ext` tool.
 - `npm test` runs the local Node unit/integration test suite.
-- `npm run build:all` builds clean unpacked bundles into `dist/firefox/` and `dist/chrome/` (`npm run build:zips` also generates store ZIPs).
+- `npm run build` builds both unpacked bundles into `dist/firefox/` and `dist/chrome/`, and generates versioned store ZIPs for both browsers in `dist/`.
 - `npm run build:icons` regenerates `targets/chrome/icons/cuepoint-{16,32,48,128}.png` from [icons/cuepoint.svg](icons/cuepoint.svg) using local Chromium/Edge.
 - `npm run test:chrome` runs the headless Chromium MV3 smoke test against `dist/chrome/`.
 - `npm run lint` validates the root checkout (`npm run lint:firefox` validates `dist/firefox/`).
-- `npm run build` creates the Firefox unsigned submission ZIP via `web-ext`.
+- `npm run build:firefox` or `npm run build:chrome` builds only that browser’s unpacked bundle; use `npm run build` for the complete release build.
 
 For a problem you can reproduce, include your browser and version, which CuePoint mode you used, and the steps to reproduce it. Don’t include your Firebase password, tokens, or private notes. Use the support contact on the store listing once available.
 
